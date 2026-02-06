@@ -1,7 +1,9 @@
 import streamlit as st
 import math
 
-# 1. [로직] 낙찰수수료
+# -----------------------------------------------------------
+# 1. [로직] 낙찰수수료 (변동 없음)
+# -----------------------------------------------------------
 def get_auction_fee(price, route):
     if route == "셀프":
         if price <= 1000000: return 75000
@@ -32,8 +34,10 @@ def get_reg_cost(bid_price, p_type):
         if supply_price >= threshold: return int(supply_price * rate)
         else: return 0
 
+# -----------------------------------------------------------
 # 3. 메인 앱
-def smart_purchase_manager_neulbarun_v31():
+# -----------------------------------------------------------
+def smart_purchase_manager_neulbarun_v32():
     st.set_page_config(page_title="매입매니저 늘바른 by 김희주", layout="wide")
     
     st.markdown("""<style> .main-title { font-size: 2rem; font-weight: 800; color: #2ecc71; } .big-price { font-size: 2.2rem; font-weight: 900; color: #4dabf7; } .section-header { font-size: 1.1rem; font-weight: bold; border-left: 4px solid #2ecc71; padding-left: 10px; margin-top: 20px; } .detail-table { width: 100%; border-collapse: collapse; } .detail-table td { padding: 8px; border-bottom: 1px solid #555; } </style>""", unsafe_allow_html=True)
@@ -70,14 +74,14 @@ def smart_purchase_manager_neulbarun_v31():
         in_wheel = st.number_input("휠/타이어", key='in_wheel', on_change=smart_unit_converter, args=('in_wheel',))
         in_etc = st.number_input("기타비용", key='in_etc', on_change=smart_unit_converter, args=('in_etc',))
 
-        # 상품화 개별 VAT 포함 비용 계산
         cost_dent_vat = int(in_dent * 1.1)
         cost_wheel_vat = int(in_wheel * 1.1)
         cost_etc_vat = int(in_etc * 1.1)
+        # 입금(20만), 교통비, 광고, 광택, 성능비 등 합산
         total_prep_vat = int(cost_transport + cost_dent_vat + cost_wheel_vat + cost_etc_vat + raw_check + COST_AD + COST_POLISH_VAT + COST_DEPOSIT)
 
     # -----------------------------------------------------------
-    # [교정] 수수료-매입가 1:1 역산 로직
+    # [핵심 교정] 수수료 차액 1:1 반영 역산 수식
     # -----------------------------------------------------------
     target_margin_rate = 0.05 
     guide_bid = 0
@@ -87,20 +91,16 @@ def smart_purchase_manager_neulbarun_v31():
         t_reg = get_reg_cost(test_bid, p_type)
         t_interest = int(test_bid * 0.015) # 이자 1.5% 반영
         
-        # 수익 산식에서 수수료 지출을 명확히 분리하여 1:1 감액 보장 낙찰수수료]
-        dealer_profit_base = (sales_price - test_bid - t_fee) / 1.1
-        current_real_income = int(dealer_profit_base - (total_prep_vat - t_fee) - t_reg - t_interest)
+        # 수수료(t_fee)를 부가세 계산 밖으로 빼서 1:1로 수익에 영향을 주게 함
+        # 수익 = (판매가/1.1) - (매입가/1.1) - 수수료 - 나머지 비용들
+        dealer_revenue = (sales_price / 1.1) - (test_bid / 1.1) - t_fee
+        current_real_income = int(dealer_revenue - (total_prep_vat - t_fee - COST_AD - raw_check) - t_reg - t_interest)
         
         if test_bid > 0 and (current_real_income / test_bid) >= target_margin_rate:
             guide_bid = test_bid
             break
             
     if guide_bid > 0: guide_bid = int(math.ceil(guide_bid / 10000) * 10000)
-
-    if 'prev_guide_bid' not in st.session_state: st.session_state['prev_guide_bid'] = -1
-    if guide_bid != st.session_state['prev_guide_bid']:
-        st.session_state['my_bid_input'] = guide_bid
-        st.session_state['prev_guide_bid'] = guide_bid
 
     with right_col:
         st.markdown("<div class='section-header'>입찰 금액 결정</div>", unsafe_allow_html=True)
@@ -111,13 +111,13 @@ def smart_purchase_manager_neulbarun_v31():
 
     st.markdown("---")
 
-    # 결과 출력
+    # 결과 출력 (이자 노출 금지)
     res_fee = get_auction_fee(my_bid, p_route)
     res_reg = get_reg_cost(my_bid, p_type)
     res_interest = int(my_bid * 0.015) 
     
-    final_profit_base = (sales_price - my_bid - res_fee) / 1.1
-    real_income = int(final_profit_base - (total_prep_vat - res_fee) - res_reg - res_interest)
+    final_revenue = (sales_price / 1.1) - (my_bid / 1.1) - res_fee
+    real_income = int(final_revenue - (total_prep_vat - res_fee - COST_AD - raw_check) - res_reg - res_interest)
     real_margin_rate = (real_income / my_bid * 100) if my_bid > 0 else 0
 
     c_final1, c_final2 = st.columns(2)
@@ -132,7 +132,7 @@ def smart_purchase_manager_neulbarun_v31():
         d_col1, d_col2 = st.columns([1, 1], gap="medium")
         with d_col1:
             st.caption("▼ 상세 내역 (확인용)")
-            # 상품화 개별 내역 복구
+            # 상품화 개별 내역 전체 복구
             st.markdown(f"""
             <table class='detail-table'>
                 <tr><td>판매가</td><td align='right'>{sales_price:,} 원</td></tr>
@@ -141,14 +141,15 @@ def smart_purchase_manager_neulbarun_v31():
                 <tr><td>교통비(비과세)</td><td align='right'>{cost_transport:,} 원</td></tr>
                 <tr><td>판금/도색(VAT)</td><td align='right'>{cost_dent_vat:,} 원</td></tr>
                 <tr><td>휠/타이어(VAT)</td><td align='right'>{cost_wheel_vat:,} 원</td></tr>
+                <tr><td>기타비용(VAT)</td><td align='right'>{cost_etc_vat:,} 원</td></tr>
                 <tr><td>매입등록비</td><td align='right'>{res_reg:,} 원</td></tr>
                 <tr><td>낙찰수수료</td><td align='right'>{res_fee:,} 원</td></tr>
             </table>
             """, unsafe_allow_html=True)
         with d_col2:
-            st.caption("▼ 복사 전용 텍스트 (금융이자 제외)")
+            st.caption("▼ 복사 전용 텍스트")
             copy_text = f"판매가: {sales_price:,}원\n매입가: {my_bid:,}원\n수익률: {real_margin_rate:.2f}%\n실소득: {real_income:,}원\n-----------------\n입금비: {COST_DEPOSIT:,}원\n교통비: {cost_transport:,}원\n판금도색: {cost_dent_vat:,}원\n휠타이어: {cost_wheel_vat:,}원\n매입등록: {res_reg:,}원\n낙찰수수: {res_fee:,}원"
             st.code(copy_text, language="text")
 
 if __name__ == "__main__":
-    smart_purchase_manager_neulbarun_v31()
+    smart_purchase_manager_neulbarun_v32()
