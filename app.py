@@ -20,7 +20,7 @@ def get_auction_fee(price, route):
         else: return 505000
     else: return 0
 
-# 2. [로직] 매입등록비
+# 2. [로직] 매입등록비 (정수 처리 강화)
 def get_reg_cost(bid_price, p_type):
     threshold = 28500001
     rate = 0.0105
@@ -33,7 +33,7 @@ def get_reg_cost(bid_price, p_type):
         else: return 0
 
 # 3. 메인 앱
-def smart_purchase_manager_neulbarun_v34():
+def smart_purchase_manager_neulbarun_v35():
     st.set_page_config(page_title="매입매니저 늘바른 by 김희주", layout="wide")
     
     st.markdown("""<style> .main-title { font-size: 2rem; font-weight: 800; color: #2ecc71; } .big-price { font-size: 2.2rem; font-weight: 900; color: #4dabf7; } .section-header { font-size: 1.1rem; font-weight: bold; border-left: 4px solid #2ecc71; padding-left: 10px; margin-top: 20px; } .detail-table { width: 100%; border-collapse: collapse; } .detail-table td { padding: 8px; border-bottom: 1px solid #555; } </style>""", unsafe_allow_html=True)
@@ -44,7 +44,7 @@ def smart_purchase_manager_neulbarun_v34():
 
     def smart_unit_converter(key):
         val = st.session_state[key]
-        if 0 < val <= 20000: st.session_state[key] = val * 10000
+        if 0 < val <= 20000: st.session_state[key] = int(val * 10000)
 
     st.markdown('<div class="main-title">매입매니저 늘바른 <span style="font-size:0.5em; color:#888;">by 김희주</span></div>', unsafe_allow_html=True)
 
@@ -70,34 +70,41 @@ def smart_purchase_manager_neulbarun_v34():
         in_wheel = st.number_input("휠/타이어", key='in_wheel', on_change=smart_unit_converter, args=('in_wheel',))
         in_etc = st.number_input("기타비용", key='in_etc', on_change=smart_unit_converter, args=('in_etc',))
 
-        # 개별 항목 VAT 포함 정수 처리
         cost_dent_vat = int(in_dent * 1.1)
         cost_wheel_vat = int(in_wheel * 1.1)
         cost_etc_vat = int(in_etc * 1.1)
-        # 기본 상품화 비용 (수수료 제외)
-        fixed_prep_costs = cost_transport + cost_dent_vat + cost_wheel_vat + cost_etc_vat + raw_check + COST_AD + COST_POLISH_VAT + COST_DEPOSIT
+        # 입금비 포함 모든 고정비 합산 (수수료 제외)
+        fixed_prep_costs = int(cost_transport + cost_dent_vat + cost_wheel_vat + cost_etc_vat + raw_check + COST_AD + COST_POLISH_VAT + COST_DEPOSIT)
 
     # -----------------------------------------------------------
-    # [최종 교정] 수수료를 '무조건 원가'로 처리하는 1:1 역산 로직
+    # [수정] 수수료-매입가 1:1 대응 원칙 (소수점 원 박멸)
     # -----------------------------------------------------------
     target_margin_rate = 0.05 
     guide_bid = 0
     
+    # 1,000원 단위로 촘촘하게 역산
     for test_bid in range(sales_price, 0, -1000): 
-        current_fee = get_auction_fee(test_bid, p_route) # 선택된 루트의 고정 수수료 낙찰수수료]
+        current_fee = int(get_auction_fee(test_bid, p_route)) # 선택한 루트의 고정 원가 낙찰수수료]
         t_reg = get_reg_cost(test_bid, p_type)
         t_interest = int(test_bid * 0.015) # 금융이자 1.5%
         
-        # 순수 이익 계산 (상식 수식: 남는 돈 = 매출액 - 매입원가 - 수수료원가 - 상품화원가 - 이자/등록비)
-        # 부가세는 딜러 수익분(매출-매입-수수료)에서만 1.1로 나눔
-        profit_before_tax = (sales_price - test_bid - current_fee) / 1.1
-        current_real_income = int(profit_before_tax - (fixed_prep_costs - current_fee - COST_AD - raw_check) - t_reg - t_interest)
+        # [핵심 수식] 판매가에서 매입가와 수수료를 뺀 후 부가세를 나눔
+        # 이렇게 해야 수수료 1원이 변하면 매입가도 1원 단위로 정확히 반응함
+        net_profit_base = int((sales_price - test_bid - current_fee) / 1.1)
+        current_real_income = int(net_profit_base - (fixed_prep_costs - current_fee - COST_AD - raw_check) - t_reg - t_interest)
         
         if test_bid > 0 and (current_real_income / test_bid) >= target_margin_rate:
-            guide_bid = test_bid
+            guide_bid = int(test_bid)
             break
             
+    # 최종 결과만 만원 단위 올림
     if guide_bid > 0: guide_bid = int(math.ceil(guide_bid / 10000) * 10000)
+
+    # 세션 상태 업데이트
+    if 'prev_guide_bid' not in st.session_state: st.session_state['prev_guide_bid'] = -1
+    if guide_bid != st.session_state['prev_guide_bid']:
+        st.session_state['my_bid_input'] = guide_bid
+        st.session_state['prev_guide_bid'] = guide_bid
 
     with right_col:
         st.markdown("<div class='section-header'>입찰 금액 결정</div>", unsafe_allow_html=True)
@@ -108,12 +115,12 @@ def smart_purchase_manager_neulbarun_v34():
 
     st.markdown("---")
 
-    # 결과 출력 (이자 노출 금지)
-    res_fee = get_auction_fee(my_bid, p_route)
+    # 결과 출력
+    res_fee = int(get_auction_fee(my_bid, p_route))
     res_reg = get_reg_cost(my_bid, p_type)
     res_interest = int(my_bid * 0.015) 
     
-    final_profit = (sales_price - my_bid - res_fee) / 1.1
+    final_profit = int((sales_price - my_bid - res_fee) / 1.1)
     real_income = int(final_profit - (fixed_prep_costs - res_fee - COST_AD - raw_check) - res_reg - res_interest)
     real_margin_rate = (real_income / my_bid * 100) if my_bid > 0 else 0
 
@@ -129,7 +136,6 @@ def smart_purchase_manager_neulbarun_v34():
         d_col1, d_col2 = st.columns([1, 1], gap="medium")
         with d_col1:
             st.caption("▼ 상세 내역 (확인용)")
-            # 모든 상품화 내역 복구
             st.markdown(f"""
             <table class='detail-table'>
                 <tr><td>판매가</td><td align='right'>{sales_price:,} 원</td></tr>
@@ -148,4 +154,4 @@ def smart_purchase_manager_neulbarun_v34():
             st.code(copy_text, language="text")
 
 if __name__ == "__main__":
-    smart_purchase_manager_neulbarun_v34()
+    smart_purchase_manager_neulbarun_v35()
