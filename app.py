@@ -20,7 +20,7 @@ def get_auction_fee(price, route):
         else: return 505000
     else: return 0
 
-# 2. [로직] 매입등록비 (비과세)
+# 2. [로직] 매입등록비
 def get_reg_cost(bid_price, p_type):
     threshold = 28500001
     rate = 0.0105
@@ -33,10 +33,15 @@ def get_reg_cost(bid_price, p_type):
         else: return 0
 
 # 3. 메인 앱
-def smart_purchase_manager_neulbarun_v41():
+def smart_purchase_manager_neulbarun_v42():
     st.set_page_config(page_title="매입매니저 늘바른 by 김희주", layout="wide")
     
     st.markdown("""<style> .main-title { font-size: 2rem; font-weight: 800; color: #2ecc71; } .big-price { font-size: 2.2rem; font-weight: 900; color: #4dabf7; } .section-header { font-size: 1.1rem; font-weight: bold; border-left: 4px solid #2ecc71; padding-left: 10px; margin-top: 20px; } .detail-table { width: 100%; border-collapse: collapse; } .detail-table td { padding: 8px; border-bottom: 1px solid #555; } </style>""", unsafe_allow_html=True)
+
+    # 1 입력 시 만 원 변환 로직
+    def smart_unit_converter(key):
+        val = st.session_state[key]
+        if 0 < val <= 20000: st.session_state[key] = int(val * 10000)
 
     st.markdown('<div class="main-title">매입매니저 늘바른 <span style="font-size:0.5em; color:#888;">by 김희주</span></div>', unsafe_allow_html=True)
 
@@ -57,25 +62,22 @@ def smart_purchase_manager_neulbarun_v41():
         st.markdown("<div class='section-header'>상품화 비용 입력</div>", unsafe_allow_html=True)
         st.info("※ 광고(27만), 광택(13.2만), 입금(20만) 자동 포함")
         
-        COST_AD, COST_DEPOSIT, COST_POLISH_VAT = 270000, 200000, 132000 # 광택비 13.2만 고정
+        COST_AD, COST_DEPOSIT, COST_POLISH_VAT = 270000, 200000, 132000 
         raw_check = st.radio("성능비 (VAT포함)", [44000, 66000], horizontal=True)
         cost_transport = st.selectbox("교통비 (비과세)", [30000, 50000, 80000, 130000, 170000, 200000])
         
-        # [교정] 1 입력 시 만 원으로 자동 계산되도록 입력값만 받고 계산 시 만 원을 곱함
-        # step=1로 설정하여 +,- 버튼 클릭 시 1씩(만 원씩) 변화
-        in_dent_units = st.number_input("판금/도색 (단위: 만원)", value=0, step=1, format="%d")
-        in_wheel_units = st.number_input("휠/타이어 (단위: 만원)", value=0, step=1, format="%d")
-        in_etc_units = st.number_input("기타비용 (단위: 만원)", value=0, step=1, format="%d")
+        # [부활] 22 입력 시 220,000 변환 로직
+        in_dent = st.number_input("판금/도색", key='in_dent', on_change=smart_unit_converter, args=('in_dent',))
+        in_wheel = st.number_input("휠/타이어", key='in_wheel', on_change=smart_unit_converter, args=('in_wheel',))
+        in_etc = st.number_input("기타비용", key='in_etc', on_change=smart_unit_converter, args=('in_etc',))
 
-        # 실제 금액 변환 및 VAT 합산
-        cost_dent_vat = int(in_dent_units * 10000 * 1.1)
-        cost_wheel_vat = int(in_wheel_units * 10000 * 1.1)
-        cost_etc_vat = int(in_etc_units * 10000 * 1.1)
-        
+        cost_dent_vat = int(in_dent * 1.1)
+        cost_wheel_vat = int(in_wheel * 1.1)
+        cost_etc_vat = int(in_etc * 1.1)
         fixed_prep_costs = int(cost_transport + cost_dent_vat + cost_wheel_vat + cost_etc_vat + raw_check + COST_AD + COST_POLISH_VAT + COST_DEPOSIT)
 
     # -----------------------------------------------------------
-    # [희주 님 공식] 판매가 - 모든 원가 = 순수익 5% 역산
+    # [희주 님 공식] 수익 5% 역산
     # -----------------------------------------------------------
     target_margin_rate = 0.05 
     guide_bid = 0
@@ -94,7 +96,7 @@ def smart_purchase_manager_neulbarun_v41():
             
     if guide_bid > 0: guide_bid = int(math.ceil(guide_bid / 10000) * 10000)
 
-    # 입찰가 필드 업데이트
+    # 입찰가 업데이트
     if 'my_bid_input' not in st.session_state or guide_bid != st.session_state.get('prev_guide'):
         st.session_state['my_bid_input'] = guide_bid
         st.session_state['prev_guide'] = guide_bid
@@ -108,7 +110,7 @@ def smart_purchase_manager_neulbarun_v41():
 
     st.markdown("---")
 
-    # 결과 출력
+    # 결과
     res_fee = int(get_auction_fee(my_bid, p_route))
     res_reg = int(get_reg_cost(my_bid, p_type))
     res_interest = int(my_bid * 0.015) 
@@ -119,30 +121,30 @@ def smart_purchase_manager_neulbarun_v41():
 
     c_final1, c_final2 = st.columns(2)
     with c_final1:
-        st.markdown("<div style='text-align:center;'>예상 실소득액 (순수이익)</div>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:center;'>예상 순수익</div>", unsafe_allow_html=True)
         st.markdown(f"<div style='text-align:center;' class='real-income'>{real_income:,} 원</div>", unsafe_allow_html=True)
     with c_final2:
-        st.markdown("<div style='text-align:center;'>실질 수익률 (매입가 대비)</div>", unsafe_allow_html=True)
+        st.markdown("<div style='text-align:center;'>실질 수익률</div>", unsafe_allow_html=True)
         st.markdown(f"<div style='text-align:center;' class='margin-rate'>{real_margin_rate:.2f} %</div>", unsafe_allow_html=True)
 
     with st.expander("🧾 상세 내역 및 복사 (펼치기)", expanded=True):
         d_col1, d_col2 = st.columns([1, 1], gap="medium")
         with d_col1:
-            st.caption("▼ 상세 내역 (확인용)")
+            st.caption("▼ 상세 내역")
             st.markdown(f"""
             <table class='detail-table'>
                 <tr><td>판매가</td><td align='right'>{int(sales_price):,} 원</td></tr>
                 <tr><td>매입가</td><td align='right' style='color:#4dabf7;'>{int(my_bid):,} 원</td></tr>
-                <tr><td>입금비(비과세)</td><td align='right'>{int(COST_DEPOSIT):,} 원</td></tr>
-                <tr><td>낙찰수수료(VAT함)</td><td align='right'>{int(res_fee):,} 원</td></tr>
-                <tr><td>매입등록비(비과세)</td><td align='right'>{int(res_reg):,} 원</td></tr>
-                <tr><td>상품화비 합계(VAT함)</td><td align='right'>{int(cost_dent_vat + cost_wheel_vat + cost_etc_vat):,} 원</td></tr>
+                <tr><td>낙찰수수료</td><td align='right'>{int(res_fee):,} 원</td></tr>
+                <tr><td>매입등록비</td><td align='right'>{int(res_reg):,} 원</td></tr>
+                <tr><td>상품화비용</td><td align='right'>{int(cost_dent_vat + cost_wheel_vat + cost_etc_vat):,} 원</td></tr>
             </table>
             """, unsafe_allow_html=True)
         with d_col2:
             st.caption("▼ 복사 전용 텍스트")
-            copy_text = f"판매가: {int(sales_price):,}원\n매입가: {int(my_bid):,}원\n수익률: {real_margin_rate:.2f}%\n순수익: {int(real_income):,}원\n-----------------\n입금비(비과세): {int(COST_DEPOSIT):,}원\n교통비(비과세): {int(cost_transport):,}원\n매입등록(비과세): {int(res_reg):,}원\n낙찰수수(VAT함): {int(res_fee):,}원"
+            # 복사 텍스트에서 입금 제외 및 상품화 내역 복구
+            copy_text = f"판매가: {int(sales_price):,}원\n매입가: {int(my_bid):,}원\n수익률: {real_margin_rate:.2f}%\n순수익: {int(real_income):,}원\n-----------------\n판금도색: {int(cost_dent_vat):,}원\n휠타이어: {int(cost_wheel_vat):,}원\n기타비용: {int(cost_etc_vat):,}원\n매입등록: {int(res_reg):,}원\n낙찰수수: {int(res_fee):,}원"
             st.code(copy_text, language="text")
 
 if __name__ == "__main__":
-    smart_purchase_manager_neulbarun_v41()
+    smart_purchase_manager_neulbarun_v42()
