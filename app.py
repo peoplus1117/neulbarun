@@ -39,7 +39,7 @@ def get_reg_cost(bid_price, p_type):
 # -----------------------------------------------------------
 # 3. 메인 앱
 # -----------------------------------------------------------
-def smart_purchase_manager_neulbarun_v25():
+def smart_purchase_manager_neulbarun_v26():
     st.set_page_config(page_title="매입매니저 늘바른 by 김희주", layout="wide")
     
     st.markdown("""
@@ -85,14 +85,10 @@ def smart_purchase_manager_neulbarun_v25():
         in_wheel = st.number_input("휠/타이어", key='in_wheel', on_change=smart_unit_converter, args=('in_wheel',))
         in_etc = st.number_input("기타비용", key='in_etc', on_change=smart_unit_converter, args=('in_etc',))
 
-        cost_dent_vat = int(in_dent * 1.1)
-        cost_wheel_vat = int(in_wheel * 1.1)
-        cost_etc_vat = int(in_etc * 1.1)
-        # 고정 지출 합계
-        total_prep_vat = cost_transport + cost_dent_vat + cost_wheel_vat + cost_etc_vat + raw_check + COST_AD + COST_POLISH_VAT + COST_DEPOSIT
+        total_prep_vat = cost_transport + int(in_dent*1.1) + int(in_wheel*1.1) + int(in_etc*1.1) + raw_check + COST_AD + COST_POLISH_VAT + COST_DEPOSIT
 
     # -----------------------------------------------------------
-    # [교정] 1,000원 단위 정밀 역산 로직
+    # [교정] 수수료-매입가 1:1 역산 로직
     # -----------------------------------------------------------
     target_margin_rate = 0.05 
     guide_bid = 0
@@ -100,12 +96,12 @@ def smart_purchase_manager_neulbarun_v25():
     for test_bid in range(sales_price, 0, -1000): 
         t_fee = get_auction_fee(test_bid, p_route)
         t_reg = get_reg_cost(test_bid, p_type)
-        t_interest = int(test_bid * 0.015) 
+        t_interest = int(test_bid * 0.015) # 이자 1.5%
         
-        # [수식 수정] 수수료를 1.1 나누기 밖으로 분리하여 1:1 반영되도록 함
-        # 매출 부가세 제외 - 매입가 - 수수료 - 나머지 비용들
-        dealer_revenue = (sales_price / 1.1) - (test_bid / 1.1) - (t_fee / 1.1)
-        current_real_income = int(dealer_revenue - (total_prep_vat - COST_AD - raw_check - t_fee) - t_reg - t_interest)
+        # [수식 완전 재설계] 순수 이익 = (판매가-매입가-수수료)/1.1 - (나머지 비용)
+        # 수수료(t_fee)가 커질수록 실질 수익이 줄어들게끔 확실히 뺌
+        real_margin = (sales_price - test_bid - t_fee) / 1.1
+        current_real_income = int(real_margin - (total_prep_vat - t_fee) - t_reg - t_interest)
         
         if test_bid > 0 and (current_real_income / test_bid) >= target_margin_rate:
             guide_bid = test_bid
@@ -127,13 +123,13 @@ def smart_purchase_manager_neulbarun_v25():
 
     st.markdown("---")
 
-    # 결과 출력
+    # 최종 결과
     res_fee = get_auction_fee(my_bid, p_route)
     res_reg = get_reg_cost(my_bid, p_type)
     res_interest = int(my_bid * 0.015) 
     
-    dealer_revenue = (sales_price / 1.1) - (my_bid / 1.1) - (res_fee / 1.1)
-    real_income = int(dealer_revenue - (total_prep_vat - COST_AD - raw_check - res_fee) - res_reg - res_interest)
+    real_margin = (sales_price - my_bid - res_fee) / 1.1
+    real_income = int(real_margin - (total_prep_vat - res_fee) - res_reg - res_interest)
     real_margin_rate = (real_income / my_bid * 100) if my_bid > 0 else 0
 
     c_final1, c_final2 = st.columns(2)
@@ -164,4 +160,4 @@ def smart_purchase_manager_neulbarun_v25():
             st.code(copy_text, language="text")
 
 if __name__ == "__main__":
-    smart_purchase_manager_neulbarun_v25()
+    smart_purchase_manager_neulbarun_v26()
