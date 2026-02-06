@@ -39,23 +39,20 @@ def get_reg_cost(bid_price, p_type):
 # -----------------------------------------------------------
 # 3. 메인 앱
 # -----------------------------------------------------------
-def smart_purchase_manager_neulbarun_v16():
+def smart_purchase_manager_neulbarun_v17():
     st.set_page_config(page_title="매입매니저 늘바른 by 김희주", layout="wide")
     
     st.markdown("""
     <style>
         html, body, [class*="css"] { font-size: 16px; }
         @media (max-width: 600px) { html, body, [class*="css"] { font-size: 14px; } }
-        
         .main-title { font-size: clamp(1.5rem, 4vw, 2.5rem); font-weight: 800; color: #2ecc71; display: inline-block; }
         .sub-author { font-size: 0.5em; font-weight: 400; color: #888; margin-left: 10px; }
-        
         .big-price { font-size: clamp(1.6rem, 3.5vw, 2.2rem); font-weight: 900; color: #4dabf7; margin-bottom: 0px; }
         .real-income { font-size: clamp(1.4rem, 2.5vw, 1.8rem); font-weight: bold; }
         .margin-rate { font-size: clamp(2.0rem, 4vw, 2.5rem); font-weight: 900; color: #ff6b6b; }
         .input-check { font-size: 0.9rem; color: #2e7d32; font-weight: bold; margin-top: -10px; margin-bottom: 20px; }
         .section-header { font-size: 1.1rem; font-weight: bold; margin-bottom: 10px; border-left: 4px solid #2ecc71; padding-left: 10px; }
-        
         .detail-table-container { width: 100%; max-width: 450px; margin: 0 auto; }
         .detail-table { width: 100%; border-collapse: collapse; font-size: clamp(0.9rem, 2.5vw, 1.1rem); }
         .detail-table td { padding: 6px 10px; border-bottom: 1px solid #555; }
@@ -104,17 +101,16 @@ def smart_purchase_manager_neulbarun_v16():
         st.caption(f"※ 광고(27만), 광택(13.2만) 포함 / 모든 입력값 부가세 10% 가산됨")
 
     # -----------------------------------------------------------
-    # [가이드 로직: 타겟 마진 3% 설정]
+    # [가이드 로직: 타겟 마진 3.4% 설정]
     # -----------------------------------------------------------
-    # 실소득 3%를 확보하기 위해 판매가의 약 96% 선을 예산으로 잡음
-    budget_after_margin = int(sales_price * 0.96) 
+    budget_after_margin = int(sales_price * 0.956) # 1 - 0.044 (0.01 이자 차이 등 보정값 포함)
     guide_bid = 0
     
     start_point = budget_after_margin - total_prep_vat
     for bid in range(start_point, start_point - 5000000, -10000):
         fee = get_auction_fee(bid, p_route)
         reg = get_reg_cost(bid, p_type)
-        interest = int(bid * 0.015) 
+        interest = int(bid * 0.015) # 이자는 면세 항목으로 별도 합산
         if (bid + total_prep_vat + fee + reg + interest) <= budget_after_margin:
             guide_bid = bid
             break
@@ -196,4 +192,4 @@ def smart_purchase_manager_neulbarun_v16():
             st.code(copy_text, language="text")
 
 if __name__ == "__main__":
-    smart_purchase_manager_neulbarun_v16()
+    smart_purchase_manager_neulbarun_v17()
