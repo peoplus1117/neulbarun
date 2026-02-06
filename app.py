@@ -39,7 +39,7 @@ def get_reg_cost(bid_price, p_type):
 # -----------------------------------------------------------
 # 3. 메인 앱
 # -----------------------------------------------------------
-def smart_purchase_manager_neulbarun_v17():
+def smart_purchase_manager_neulbarun_v18():
     st.set_page_config(page_title="매입매니저 늘바른 by 김희주", layout="wide")
     
     st.markdown("""
@@ -101,16 +101,17 @@ def smart_purchase_manager_neulbarun_v17():
         st.caption(f"※ 광고(27만), 광택(13.2만) 포함 / 모든 입력값 부가세 10% 가산됨")
 
     # -----------------------------------------------------------
-    # [가이드 로직: 타겟 마진 3.4% 설정]
+    # [가이드 로직: 타겟 마진 3.3% 설정]
     # -----------------------------------------------------------
-    budget_after_margin = int(sales_price * 0.956) # 1 - 0.044 (0.01 이자 차이 등 보정값 포함)
+    # 목표 소득률 3.3%에 맞춘 예산 역산 (0.957 보정치 적용)
+    budget_after_margin = int(sales_price * 0.957) 
     guide_bid = 0
     
     start_point = budget_after_margin - total_prep_vat
     for bid in range(start_point, start_point - 5000000, -10000):
         fee = get_auction_fee(bid, p_route)
         reg = get_reg_cost(bid, p_type)
-        interest = int(bid * 0.015) # 이자는 면세 항목으로 별도 합산
+        interest = int(bid * 0.015) 
         if (bid + total_prep_vat + fee + reg + interest) <= budget_after_margin:
             guide_bid = bid
             break
@@ -136,7 +137,7 @@ def smart_purchase_manager_neulbarun_v17():
 
     st.markdown("---")
 
-    # 결과 계산
+    # 결과 계산 (마진에서 부가세/이자 등 비용 정확히 차감)
     res_fee = get_auction_fee(my_bid, p_route)
     res_reg = get_reg_cost(my_bid, p_type)
     res_interest = int(my_bid * 0.015)
@@ -192,4 +193,4 @@ def smart_purchase_manager_neulbarun_v17():
             st.code(copy_text, language="text")
 
 if __name__ == "__main__":
-    smart_purchase_manager_neulbarun_v17()
+    smart_purchase_manager_neulbarun_v18()
