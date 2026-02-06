@@ -39,32 +39,33 @@ def get_reg_cost(bid_price, p_type):
 # -----------------------------------------------------------
 # 3. 메인 앱
 # -----------------------------------------------------------
-def smart_purchase_manager_neulbarun():
+def smart_purchase_manager_neulbarun_v12():
     st.set_page_config(page_title="매입매니저 늘바른 by 김희주", layout="wide")
     
     st.markdown("""
     <style>
         html, body, [class*="css"] { font-size: 16px; }
         @media (max-width: 600px) { html, body, [class*="css"] { font-size: 14px; } }
-        h1 { font-size: clamp(1.5rem, 4vw, 2.5rem) !important; font-weight: 800 !important; color: #2ecc71 !important; }
+        
+        .main-title { font-size: clamp(1.5rem, 4vw, 2.5rem); font-weight: 800; color: #2ecc71; display: inline-block; }
+        .sub-author { font-size: 0.5em; font-weight: 400; color: #888; margin-left: 10px; }
+        
         .big-price { font-size: clamp(1.6rem, 3.5vw, 2.2rem); font-weight: 900; color: #4dabf7; margin-bottom: 0px; }
         .real-income { font-size: clamp(1.4rem, 2.5vw, 1.8rem); font-weight: bold; }
         .margin-rate { font-size: clamp(2.0rem, 4vw, 2.5rem); font-weight: 900; color: #ff6b6b; }
         .input-check { font-size: 0.9rem; color: #2e7d32; font-weight: bold; margin-top: -10px; margin-bottom: 20px; }
         .section-header { font-size: 1.1rem; font-weight: bold; margin-bottom: 10px; border-left: 4px solid #2ecc71; padding-left: 10px; }
+        
         .detail-table-container { width: 100%; max-width: 450px; margin: 0 auto; }
         .detail-table { width: 100%; border-collapse: collapse; font-size: clamp(0.9rem, 2.5vw, 1.1rem); }
         .detail-table td { padding: 6px 10px; border-bottom: 1px solid #555; }
         @media (prefers-color-scheme: light) { .detail-table td { border-bottom: 1px solid #ddd; } }
         .detail-label { font-weight: bold; opacity: 0.9; white-space: nowrap; }
         .detail-value { text-align: right; font-weight: bold; }
-        .block-container { padding-top: 1.5rem !important; padding-bottom: 3rem !important; }
     </style>
     """, unsafe_allow_html=True)
 
     # 세션 초기화
-    if 'p_type' not in st.session_state: st.session_state['p_type'] = "개인"
-    if 'p_route' not in st.session_state: st.session_state['p_route'] = "셀프"
     if 'in_dent' not in st.session_state: st.session_state['in_dent'] = 0
     if 'in_wheel' not in st.session_state: st.session_state['in_wheel'] = 0
     if 'in_etc' not in st.session_state: st.session_state['in_etc'] = 0
@@ -73,7 +74,8 @@ def smart_purchase_manager_neulbarun():
         val = st.session_state[key]
         if 0 < val <= 20000: st.session_state[key] = val * 10000
 
-    st.title("매입매니저 늘바른 by 김희주")
+    # 커스텀 타이틀 (by 김희주 작게 적용)
+    st.markdown('<div class="main-title">매입매니저 늘바른 <span class="sub-author">by 김희주</span></div>', unsafe_allow_html=True)
 
     # Step 1. 상단 정보
     col1, col2, col3 = st.columns([1.5, 1, 1])
@@ -82,9 +84,9 @@ def smart_purchase_manager_neulbarun():
         sales_price = sales_input * 10000
         st.markdown(f"<div class='input-check'>확인: {sales_price:,} 원</div>", unsafe_allow_html=True)
     with col2:
-        p_type = st.radio("매입유형", ["개인", "사업자"], key='p_type')
+        p_type = st.radio("매입유형", ["개인", "사업자"])
     with col3:
-        p_route = st.selectbox("매입루트", ["셀프", "제로", "개인거래"], key='p_route')
+        p_route = st.selectbox("매입루트", ["셀프", "제로", "개인거래"])
 
     st.markdown("---")
 
@@ -93,23 +95,23 @@ def smart_purchase_manager_neulbarun():
 
     with left_col:
         st.markdown("<div class='section-header'>상품화 비용 입력 (공급가)</div>", unsafe_allow_html=True)
-        in_perf = st.radio("성능점검비", [40000, 60000], horizontal=True)
+        # 2번 요청 반영: 부가세 포함 금액인 44,000 / 66,000으로 표시
+        in_perf = st.radio("성능점검비 (VAT포함)", [44000, 66000], horizontal=True)
         in_transport = st.selectbox("교통비", [30000, 50000, 80000, 130000, 170000, 200000])
         
         in_dent = st.number_input("판금/도색", step=10000, format="%d", key='in_dent', on_change=smart_unit_converter, args=('in_dent',))
         in_wheel = st.number_input("휠/타이어", step=10000, format="%d", key='in_wheel', on_change=smart_unit_converter, args=('in_wheel',))
         in_etc = st.number_input("기타비용", step=10000, format="%d", key='in_etc', on_change=smart_unit_converter, args=('in_etc',))
 
-        # 내부 부가세 포함 계산 (성능점검비 포함)
+        # 내부 계산: 광고비 27만, 광택 13.2만 고정 + 입력 항목 부가세 10%
         COST_AD = 270000 
         COST_POLISH = int(120000 * 1.1)
-        # 선택된 성능점검비(in_perf)도 1.1을 곱해 포함 처리
-        total_prep_vat = int((in_perf + in_transport + in_dent + in_wheel + in_etc) * 1.1) + COST_AD + COST_POLISH
-        st.caption(f"※ 광고(27만), 광택(13.2만) 포함 / 입력값 + 성능비 부가세 10% 가산됨")
+        # 성능점검비는 이미 VAT포함된 값을 입력받으므로 1.1을 곱하지 않음
+        total_prep_vat = int((in_transport + in_dent + in_wheel + in_etc) * 1.1) + in_perf + COST_AD + COST_POLISH
+        st.caption(f"※ 광고(27만), 광택(13.2만) 포함 / 입력값 부가세 10% 가산됨")
 
-    # 가이드 계산 (타겟 마진 6.4%로 변경)
-    # 금리 1.5% + 부가세 매입세액공제 불일치분 등을 고려한 내부 계산 요율 조정
-    target_rate = 0.096 # 실소득 6.4% 확보를 위한 내부 요율
+    # 가이드 계산 (타겟 마진 6%로 변경)
+    target_rate = 0.092 # 실소득 6% 확보를 위한 내부 요율
     guide_bid = 0
     temp_start = int(sales_price * (1 - target_rate)) - total_prep_vat
     
@@ -117,8 +119,8 @@ def smart_purchase_manager_neulbarun():
         f = get_auction_fee(b, p_route)
         r = get_reg_cost(b, p_type)
         i = int(b * 0.015)
-        # 실제 6.4%가 확보되는 선까지 역산
-        if (b + total_prep_vat + f + r + i) <= (sales_price * 0.925):
+        # 실제 6.0%가 확보되는 선까지 역산
+        if (b + total_prep_vat + f + r + i) <= (sales_price * 0.929):
             guide_bid = b
             break
     
@@ -147,9 +149,7 @@ def smart_purchase_manager_neulbarun():
     res_reg = get_reg_cost(my_bid, p_type)
     res_interest = int(my_bid * 0.015)
     
-    # 딜러 수익 = (판매가 - 매입가 - 낙찰수수료) / 1.1
     dealer_revenue = (sales_price - my_bid - res_fee) / 1.1
-    # 실소득 = 수익 - (상품화비용전체(부가세포함) - 낙찰수수료 + 등록비 + 이자)
     real_income = int(dealer_revenue - (total_prep_vat - res_fee + res_reg + res_interest))
     real_margin_rate = (real_income / my_bid * 100) if my_bid > 0 else 0
     total_cost = my_bid + total_prep_vat + res_reg + res_interest
@@ -178,7 +178,7 @@ def smart_purchase_manager_neulbarun():
                     <tr><td class='detail-label'>예상이익률</td><td class='detail-value' style='color:#ff6b6b;'>{real_margin_rate:.2f} %</td></tr>
                     <tr><td class='detail-label'>실소득액</td><td class='detail-value'>{real_income:,} 원</td></tr>
                     <tr><td colspan='2' style='height:8px; border-bottom:1px dashed #777;'></td></tr>
-                    <tr><td class='detail-label'>상품화합계(부값포함)</td><td class='detail-value'>{total_prep_vat:,} 원</td></tr>
+                    <tr><td class='detail-label'>상품화합계(VAT포함)</td><td class='detail-value'>{total_prep_vat:,} 원</td></tr>
                     <tr><td class='detail-label'>매입등록비</td><td class='detail-value'>{res_reg:,} 원</td></tr>
                     <tr><td class='detail-label'>낙찰수수료</td><td class='detail-value'>{res_fee:,} 원</td></tr>
                     <tr><td class='detail-label'>금융이자(1.5%)</td><td class='detail-value'>{res_interest:,} 원</td></tr>
@@ -200,4 +200,4 @@ def smart_purchase_manager_neulbarun():
             st.code(copy_text, language="text")
 
 if __name__ == "__main__":
-    smart_purchase_manager_neulbarun()
+    smart_purchase_manager_neulbarun_v12()
