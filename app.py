@@ -33,18 +33,18 @@ def get_reg_cost(bid_price, p_type):
         else: return 0
 
 # 3. 메인 앱
-def smart_purchase_manager_neulbarun_v65():
+def smart_purchase_manager_neulbarun_v66():
     st.set_page_config(page_title="매입매니저 늘바른 by 김희주", layout="wide")
     
-    # [디자인 복구] v56 기준의 강렬한 요약 지표 스타일
+    # [디자인 복구] v56 기준의 강렬한 요약 지표 스타일 정밀 반영
     st.markdown("""
     <style>
         html, body, [class*="css"] { font-size: 14px; }
         .main-title { font-size: 2.2rem; font-weight: 800; color: #2ecc71; margin-bottom: 10px; }
         
-        /* [핵심] 요약 지표 글씨 크기 및 색상 복구 */
-        .result-label { font-size: 1.2rem; color: #bbb; text-align: center; margin-bottom: 8px; font-weight: 500; }
-        .result-val { font-size: 2.8rem; font-weight: 900; color: #ffffff; text-align: center; line-height: 1.2; }
+        /* 요약 지표 폰트 및 색상 교정 */
+        .result-label { font-size: 1.2rem; color: #bbb; text-align: center; margin-bottom: 8px; font-weight: 600; }
+        .result-val { font-size: 2.8rem; font-weight: 900; color: #ffffff; text-align: center; line-height: 1.1; }
         .margin-red { color: #ff6b6b !important; }
         
         .info-text { color: #4dabf7; font-weight: bold; font-size: 1.0rem; margin-bottom: 15px; }
@@ -108,7 +108,7 @@ def smart_purchase_manager_neulbarun_v65():
         st.markdown(f"<div style='font-size:2.6rem; font-weight:900; color:#4dabf7; margin-top:10px;'>{int(guide_bid):,} 원</div>", unsafe_allow_html=True)
         my_bid = st.number_input("실제 입찰가 입력", value=int(guide_bid), step=10000, format="%d", label_visibility="collapsed")
 
-    # 결과 요약 (디자인 복구 완료)
+    # 결과 요약 디자인 복구
     st.markdown("<br>", unsafe_allow_html=True)
     res_fee = int(get_auction_fee(my_bid, p_route))
     res_reg = int(get_reg_cost(my_bid, p_type))
@@ -158,4 +158,4 @@ def smart_purchase_manager_neulbarun_v65():
             st.code(copy_text, language="text")
 
 if __name__ == "__main__":
-    smart_purchase_manager_neulbarun_v65()
+    smart_purchase_manager_neulbarun_v66()
