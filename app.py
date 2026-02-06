@@ -33,21 +33,22 @@ def get_reg_cost(bid_price, p_type):
         else: return 0
 
 # 3. 메인 앱
-def smart_purchase_manager_neulbarun_v43():
+def smart_purchase_manager_neulbarun_v44():
     st.set_page_config(page_title="매입매니저 늘바른 by 김희주", layout="wide")
     
     st.markdown("""<style> .main-title { font-size: 2rem; font-weight: 800; color: #2ecc71; } .big-price { font-size: 2.2rem; font-weight: 900; color: #4dabf7; } .section-header { font-size: 1.1rem; font-weight: bold; border-left: 4px solid #2ecc71; padding-left: 10px; margin-top: 20px; } .detail-table { width: 100%; border-collapse: collapse; } .detail-table td { padding: 8px; border-bottom: 1px solid #555; } </style>""", unsafe_allow_html=True)
 
-    # [교정] 1 입력 시 만 원 변환 로직 - 여기서 int()를 확실히 씌움
+    # [교정] 1 입력 시 만 원 변환 로직 - 정수 보장 및 중복 곱셈 방지
     def smart_unit_converter(key):
         val = st.session_state[key]
-        if 0 < val <= 20000: st.session_state[key] = int(val * 10000)
+        if 0 < val <= 5000: # 5000이하 숫자가 들어오면 만 원 단위로 판단
+            st.session_state[key] = int(val * 10000)
 
     st.markdown('<div class="main-title">매입매니저 늘바른 <span style="font-size:0.5em; color:#888;">by 김희주</span></div>', unsafe_allow_html=True)
 
     col1, col2, col3 = st.columns([1.5, 1, 1])
     with col1:
-        sales_input = st.number_input("판매 예정가 (만원)", value=3500, step=10, format="%d")
+        sales_input = st.number_input("판매 예정가 (만원 단위)", value=3500, step=10, format="%d")
         sales_price = int(sales_input * 10000)
     with col2:
         p_type = st.radio("매입유형", ["개인", "사업자"])
@@ -63,14 +64,14 @@ def smart_purchase_manager_neulbarun_v43():
         st.info("※ 광고(27만), 광택(13.2만), 입금(20만) 자동 포함")
         
         COST_AD, COST_DEPOSIT, COST_POLISH_VAT = 270000, 200000, 132000 
-        raw_check = st.radio("성능비 (VAT포함)", [44000, 66000], horizontal=True)
+        raw_check = st.radio("성능비 (VAT함)", [44000, 66000], horizontal=True)
         cost_transport = st.selectbox("교통비 (비과세)", [30000, 50000, 80000, 130000, 170000, 200000])
         
-        in_dent = st.number_input("판금/도색", key='in_dent', on_change=smart_unit_converter, args=('in_dent',))
-        in_wheel = st.number_input("휠/타이어", key='in_wheel', on_change=smart_unit_converter, args=('in_wheel',))
-        in_etc = st.number_input("기타비용", key='in_etc', on_change=smart_unit_converter, args=('in_etc',))
+        # [수정] value와 step 모두 정수로 고정하여 소수점 발생 원천 차단
+        in_dent = st.number_input("판금/도색", value=0, step=1, key='in_dent', on_change=smart_unit_converter, args=('in_dent',), format="%d")
+        in_wheel = st.number_input("휠/타이어", value=0, step=1, key='in_wheel', on_change=smart_unit_converter, args=('in_wheel',), format="%d")
+        in_etc = st.number_input("기타비용", value=0, step=1, key='in_etc', on_change=smart_unit_converter, args=('in_etc',), format="%d")
 
-        # 계산부 전체 int() 처리로 소수점 원천 차단
         cost_dent_vat = int(in_dent * 1.1)
         cost_wheel_vat = int(in_wheel * 1.1)
         cost_etc_vat = int(in_etc * 1.1)
@@ -97,7 +98,7 @@ def smart_purchase_manager_neulbarun_v43():
     if guide_bid > 0: guide_bid = int(math.ceil(guide_bid / 10000) * 10000)
 
     # 입찰가 업데이트
-    if 'my_bid_input' not in st.session_state or guide_bid != st.session_state.get('prev_guide'):
+    if 'prev_guide' not in st.session_state or guide_bid != st.session_state['prev_guide']:
         st.session_state['my_bid_input'] = int(guide_bid)
         st.session_state['prev_guide'] = int(guide_bid)
 
@@ -106,7 +107,7 @@ def smart_purchase_manager_neulbarun_v43():
         st.markdown(f"**순수이익 5% 맞춤 매입가 (이자 1.5% 반영)**")
         st.markdown(f"<div class='big-price'>{int(guide_bid):,} 원</div>", unsafe_allow_html=True)
         st.write("")
-        my_bid = st.number_input("실제 입찰가 입력", value=int(st.session_state['my_bid_input']), step=10000, format="%d", label_visibility="collapsed")
+        my_bid = st.number_input("실제 입찰가 입력", value=int(st.session_state.get('my_bid_input', guide_bid)), step=10000, format="%d", label_visibility="collapsed")
 
     st.markdown("---")
 
@@ -146,4 +147,4 @@ def smart_purchase_manager_neulbarun_v43():
             st.code(copy_text, language="text")
 
 if __name__ == "__main__":
-    smart_purchase_manager_neulbarun_v43()
+    smart_purchase_manager_neulbarun_v44()
