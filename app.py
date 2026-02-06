@@ -106,7 +106,7 @@ def smart_purchase_manager_final():
         st.caption(f"※ 광고(27만), 광택(13.2만) 포함 / 모든 입력값 부가세 10% 가산됨")
 
     # 가이드 계산 (실소득 5% 타겟)
-    target_rate = 0.082 # 금리 1.5% 및 부가세 고려한 요율
+    target_rate = 0.082 
     guide_bid = 0
     temp_start = int(sales_price * (1 - target_rate)) - total_prep_vat
     
@@ -134,7 +134,8 @@ def smart_purchase_manager_final():
         my_bid = st.number_input("입찰가 입력", step=10000, format="%d", label_visibility="collapsed", key='my_bid_input', on_change=smart_unit_converter, args=('my_bid_input',))
         
         bid_ratio = (my_bid / sales_price) * 100 if sales_price > 0 else 0
-        st.markdown(f<div class='input-check' style='text-align:right;'>확인: ({bid_ratio:.1f}%) {my_bid:,} 원</div>", unsafe_allow_html=True)
+        # 수정된 부분: 따옴표 오류 해결
+        st.markdown(f"<div class='input-check' style='text-align:right;'>확인: ({bid_ratio:.1f}%) {my_bid:,} 원</div>", unsafe_allow_html=True)
 
     st.markdown("---")
 
@@ -145,7 +146,7 @@ def smart_purchase_manager_final():
     
     dealer_revenue = (sales_price - my_bid - res_fee) / 1.1
     real_income = int(dealer_revenue - (total_prep_vat - res_fee + res_reg + res_interest))
-    real_margin_rate = (real_income / my_bid) * 100 if my_bid > 0 else 0
+    real_margin_rate = (real_income / my_bid * 100) if my_bid > 0 else 0
     total_cost = my_bid + total_prep_vat + res_reg + res_interest
 
     c_final1, c_final2 = st.columns(2)
