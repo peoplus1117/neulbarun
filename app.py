@@ -33,10 +33,9 @@ def get_reg_cost(bid_price, p_type):
         else: return 0
 
 # 3. 메인 앱
-def smart_purchase_manager_neulbarun_v67():
+def smart_purchase_manager_neulbarun_v68():
     st.set_page_config(page_title="매입매니저 늘바른 by 김희주", layout="wide")
     
-    # [디자인 복구] 표의 높이를 줄이기 위해 padding 값 대폭 축소
     st.markdown("""
     <style>
         html, body, [class*="css"] { font-size: 14px; }
@@ -47,7 +46,6 @@ def smart_purchase_manager_neulbarun_v67():
         .info-text { color: #4dabf7; font-weight: bold; font-size: 1.0rem; margin-bottom: 10px; }
         
         .detail-table-container { display: flex; flex-direction: column; align-items: center; }
-        /* [핵심] 표 가로 너비 유지 및 행 높이(padding) 최소화 */
         .detail-table { width: 55% !important; border-collapse: collapse; font-size: 1.15rem; border: 1px solid #333; }
         .detail-table td { padding: 6px 12px; border: 1px solid #333; line-height: 1.2; }
         .d-label { background-color: #1e1e1e; color: #bbb; width: 45%; font-weight: 500; }
@@ -152,8 +150,9 @@ def smart_purchase_manager_neulbarun_v67():
             """, unsafe_allow_html=True)
         with d_col2:
             st.markdown("<div style='font-size:0.9rem; color:#bbb; margin-bottom:5px;'>▼ 복사 전용 텍스트 (우측상단 클릭)</div>", unsafe_allow_html=True)
-            copy_text = f"판매가  : {int(sales_price):,} 원\n매입가  : {int(my_bid):,} 원\n예상이익률 : {real_margin_rate:.2f} %\n실소득액  : {int(real_income):,} 원\n----------------------------\n광고비   : {int(COST_AD):,} 원\n광택비   : {int(COST_POLISH_VAT):,} 원\n입금비   : {int(COST_DEPOSIT):,} 원\n교통비   : {int(cost_transport):,} 원\n판금/도색 : {int(cost_dent_vat):,} 원\n휠/타이어 : {int(cost_wheel_vat):,} 원\n기타비용  : {int(cost_etc_vat):,} 원\n매입등록비 : {int(res_reg):,} 원\n낙찰수수료 : {int(res_fee):,} 원"
+            # [수정] 광고비, 광택비, 입금비 제외
+            copy_text = f"판매가  : {int(sales_price):,} 원\n매입가  : {int(my_bid):,} 원\n예상이익률 : {real_margin_rate:.2f} %\n실소득액  : {int(real_income):,} 원\n----------------------------\n교통비   : {int(cost_transport):,} 원\n판금/도색 : {int(cost_dent_vat):,} 원\n휠/타이어 : {int(cost_wheel_vat):,} 원\n기타비용  : {int(cost_etc_vat):,} 원\n매입등록비 : {int(res_reg):,} 원\n낙찰수수료 : {int(res_fee):,} 원"
             st.code(copy_text, language="text")
 
 if __name__ == "__main__":
-    smart_purchase_manager_neulbarun_v67()
+    smart_purchase_manager_neulbarun_v68()
