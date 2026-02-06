@@ -39,7 +39,7 @@ def get_reg_cost(bid_price, p_type):
 # -----------------------------------------------------------
 # 3. 메인 앱
 # -----------------------------------------------------------
-def smart_purchase_manager_neulbarun_v21():
+def smart_purchase_manager_neulbarun_v22():
     st.set_page_config(page_title="매입매니저 늘바른 by 김희주", layout="wide")
     
     st.markdown("""
@@ -80,14 +80,15 @@ def smart_purchase_manager_neulbarun_v21():
     left_col, right_col = st.columns([1, 1], gap="large")
 
     with left_col:
+        # 태그가 노출되지 않도록 st.markdown 옵션 수정
         st.markdown("<div class='section-header'>상품화 비용 입력 (세전)</div>", unsafe_allow_html=True)
         st.caption("※ 비용/입찰가 팁: 17 입력 시 17만 원 / 3500 입력 시 3,500만 원")
         
         COST_AD = 270000 
-        COST_DEPOSIT = 200000 # 입금 20만 원 (비과세)
-        COST_POLISH_VAT = int(120000 * 1.1) # 광택 12만 원 (별도)
+        COST_DEPOSIT = 200000 
+        COST_POLISH_VAT = int(120000 * 1.1)
         raw_check = st.radio("성능점검비 (포함)", [44000, 66000], horizontal=True)
-        cost_transport = st.selectbox("교통비 (비과세)", [30000, 50000, 80000, 130000, 170000, 200000]) # 교통비 비과세
+        cost_transport = st.selectbox("교통비 (비과세)", [30000, 50000, 80000, 130000, 170000, 200000])
         
         in_dent = st.number_input("판금/도색 (공급가)", step=10000, format="%d", key='in_dent', on_change=smart_unit_converter, args=('in_dent',))
         in_wheel = st.number_input("휠/타이어 (공급가)", step=10000, format="%d", key='in_wheel', on_change=smart_unit_converter, args=('in_wheel',))
@@ -98,20 +99,15 @@ def smart_purchase_manager_neulbarun_v21():
         cost_etc_vat = int(in_etc * 1.1)
         total_prep_vat = cost_transport + cost_dent_vat + cost_wheel_vat + cost_etc_vat + raw_check + COST_AD + COST_POLISH_VAT + COST_DEPOSIT
 
-    # -----------------------------------------------------------
-    # 목표 수익률 5% 역산 로직 (이자 1.5% 계산용)
-    # -----------------------------------------------------------
+    # 5% 수익률 역산 로직 (이자 1.5%)
     target_margin_rate = 0.05 
     guide_bid = 0
-    
     for test_bid in range(sales_price, 0, -10000):
         t_fee = get_auction_fee(test_bid, p_route)
         t_reg = get_reg_cost(test_bid, p_type)
-        t_interest = int(test_bid * 0.015) # 이자 1.5%
-        
+        t_interest = int(test_bid * 0.015) 
         dealer_revenue = (sales_price - test_bid - t_fee) / 1.1
         current_real_income = int(dealer_revenue - (total_prep_vat - t_fee + t_reg + t_interest))
-        
         if test_bid > 0 and (current_real_income / test_bid) >= target_margin_rate:
             guide_bid = test_bid
             break
@@ -124,7 +120,8 @@ def smart_purchase_manager_neulbarun_v21():
         st.session_state['prev_guide_bid'] = guide_bid
 
     with right_col:
-        st.markdown("<div class='section-header'>입찰 금액 결정</div>")
+        # 태그 노출 방지를 위해 unsafe_allow_html=True 추가
+        st.markdown("<div class='section-header'>입찰 금액 결정</div>", unsafe_allow_html=True)
         st.markdown(f"**수익률 5% 맞춤 매입가 (입금 20만 반영)**")
         st.markdown(f"<div class='big-price'>{guide_bid:,} 원</div>", unsafe_allow_html=True)
         st.write("")
@@ -132,11 +129,9 @@ def smart_purchase_manager_neulbarun_v21():
 
     st.markdown("---")
 
-    # 결과 출력 (이자 노출 금지)
     res_fee = get_auction_fee(my_bid, p_route)
     res_reg = get_reg_cost(my_bid, p_type)
     res_interest = int(my_bid * 0.015) 
-    
     dealer_revenue = (sales_price - my_bid - res_fee) / 1.1
     real_income = int(dealer_revenue - (total_prep_vat - res_fee + res_reg + res_interest))
     real_margin_rate = (real_income / my_bid * 100) if my_bid > 0 else 0
@@ -171,4 +166,4 @@ def smart_purchase_manager_neulbarun_v21():
             st.code(copy_text, language="text")
 
 if __name__ == "__main__":
-    smart_purchase_manager_neulbarun_v21()
+    smart_purchase_manager_neulbarun_v22()
