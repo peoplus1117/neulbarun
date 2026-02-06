@@ -33,18 +33,31 @@ def get_reg_cost(bid_price, p_type):
         else: return 0
 
 # 3. 메인 앱
-def smart_purchase_manager_neulbarun_v46():
+def smart_purchase_manager_neulbarun_v47():
     st.set_page_config(page_title="매입매니저 늘바른 by 김희주", layout="wide")
     
-    st.markdown("""<style> .main-title { font-size: 2rem; font-weight: 800; color: #2ecc71; } .big-price { font-size: 2.2rem; font-weight: 900; color: #4dabf7; } .section-header { font-size: 1.1rem; font-weight: bold; border-left: 4px solid #2ecc71; padding-left: 10px; margin-top: 20px; } .detail-table { width: 100%; border-collapse: collapse; } .detail-table td { padding: 8px; border-bottom: 1px solid #555; } </style>""", unsafe_allow_html=True)
+    # CSS 스타일 복구 (V36의 큼직한 폰트 적용)
+    st.markdown("""
+    <style>
+        html, body, [class*="css"] { font-size: 16px; }
+        .main-title { font-size: 2.5rem; font-weight: 800; color: #2ecc71; display: inline-block; }
+        .sub-author { font-size: 0.5em; font-weight: 400; color: #888; margin-left: 10px; }
+        .big-price { font-size: 2.5rem; font-weight: 900; color: #4dabf7; margin-bottom: 0px; }
+        .real-income { font-size: 2.2rem; font-weight: bold; color: #ffffff; }
+        .margin-rate { font-size: 3.0rem; font-weight: 900; color: #ff6b6b; }
+        .section-header { font-size: 1.2rem; font-weight: bold; border-left: 5px solid #2ecc71; padding-left: 10px; margin-top: 20px; }
+        .detail-table { width: 100%; border-collapse: collapse; font-size: 1.1rem; }
+        .detail-table td { padding: 10px; border-bottom: 1px solid #555; }
+    </style>
+    """, unsafe_allow_html=True)
 
-    # [교정] 1 입력 시 만 원 변환 로직 (중복 에러 방지 처리)
+    # 자동 변환 로직
     def smart_unit_converter(key):
         val = st.session_state[key]
         if 0 < val <= 5000: 
             st.session_state[key] = int(val * 10000)
 
-    st.markdown('<div class="main-title">매입매니저 늘바른 <span style="font-size:0.5em; color:#888;">by 김희주</span></div>', unsafe_allow_html=True)
+    st.markdown('<div class="main-title">매입매니저 늘바른 <span class="sub-author">by 김희주</span></div>', unsafe_allow_html=True)
 
     col1, col2, col3 = st.columns([1.5, 1, 1])
     with col1:
@@ -67,7 +80,6 @@ def smart_purchase_manager_neulbarun_v46():
         raw_check = st.radio("성능비 (VAT포함)", [44000, 66000], horizontal=True)
         cost_transport = st.selectbox("교통비 (비과세)", [30000, 50000, 80000, 130000, 170000, 200000])
         
-        # [수정] step=10000으로 설정하여 +,- 버튼 클릭 시 만 원씩 변동
         in_dent = st.number_input("판금/도색", step=10000, key='in_dent', on_change=smart_unit_converter, args=('in_dent',), format="%d")
         in_wheel = st.number_input("휠/타이어", step=10000, key='in_wheel', on_change=smart_unit_converter, args=('in_wheel',), format="%d")
         in_etc = st.number_input("기타비용", step=10000, key='in_etc', on_change=smart_unit_converter, args=('in_etc',), format="%d")
@@ -77,20 +89,15 @@ def smart_purchase_manager_neulbarun_v46():
         cost_etc_vat = int(in_etc * 1.1)
         fixed_prep_costs = int(cost_transport + cost_dent_vat + cost_wheel_vat + cost_etc_vat + raw_check + COST_AD + COST_POLISH_VAT + COST_DEPOSIT)
 
-    # -----------------------------------------------------------
     # [희주 님 공식] 수익 5% 역산
-    # -----------------------------------------------------------
     target_margin_rate = 0.05 
     guide_bid = 0
-    
     for test_bid in range(sales_price, 0, -1000): 
         t_fee = int(get_auction_fee(test_bid, p_route))
         t_reg = int(get_reg_cost(test_bid, p_type))
         t_interest = int(test_bid * 0.015) 
-        
         total_cost = test_bid + t_fee + t_reg + t_interest + fixed_prep_costs
         net_profit = sales_price - total_cost
-        
         if test_bid > 0 and (net_profit / test_bid) >= target_margin_rate:
             guide_bid = int(test_bid)
             break
@@ -106,11 +113,10 @@ def smart_purchase_manager_neulbarun_v46():
 
     st.markdown("---")
 
-    # 결과
+    # 결과 출력
     res_fee = int(get_auction_fee(my_bid, p_route))
     res_reg = int(get_reg_cost(my_bid, p_type))
     res_interest = int(my_bid * 0.015) 
-    
     total_cost_final = int(my_bid + res_fee + res_reg + res_interest + fixed_prep_costs)
     real_income = int(sales_price - total_cost_final)
     real_margin_rate = (real_income / my_bid * 100) if my_bid > 0 else 0
@@ -142,4 +148,4 @@ def smart_purchase_manager_neulbarun_v46():
             st.code(copy_text, language="text")
 
 if __name__ == "__main__":
-    smart_purchase_manager_neulbarun_v46()
+    smart_purchase_manager_neulbarun_v47()
