@@ -1,7 +1,7 @@
 import streamlit as st
 import math
 
-# 1. [로직] 낙찰수수료
+# 1. [로직] 낙찰수수료 (고정)
 def get_auction_fee(price, route):
     if route == "셀프":
         if price <= 1000000: return 75000
@@ -33,26 +33,24 @@ def get_reg_cost(bid_price, p_type):
         else: return 0
 
 # 3. 메인 앱
-def smart_purchase_manager_neulbarun_v54():
+def smart_purchase_manager_neulbarun_v55():
     st.set_page_config(page_title="매입매니저 늘바른 by 김희주", layout="wide")
     
-    # [디자인 복구] 세 번째 이미지와 똑같은 간격과 폰트 크기 설정
+    # [교정] 상세내역 표 가로길이를 절반으로 줄이는 CSS
     st.markdown("""
     <style>
         html, body, [class*="css"] { font-size: 14px; }
         .main-title { font-size: 2.0rem; font-weight: 800; color: #2ecc71; margin-bottom: 10px; }
         .result-val { font-size: 1.8rem; font-weight: 800; color: #fff; text-align: center; }
         .result-label { font-size: 0.9rem; color: #bbb; text-align: center; margin-bottom: 5px; }
-        .section-header { font-size: 1.0rem; font-weight: bold; border-left: 4px solid #2ecc71; padding-left: 8px; margin-top: 10px; margin-bottom: 10px; }
         
-        /* 상세 내역 테이블 - 세 번째 이미지와 100% 동일하게 세팅 */
-        .detail-table { width: 100%; border-collapse: collapse; font-size: 1.1rem; border: 1px solid #333; }
+        /* 상세 내역 테이블 - 가로 너비를 50%로 고정 */
+        .detail-table { width: 50% !important; border-collapse: collapse; font-size: 1.1rem; border: 1px solid #333; }
         .detail-table td { padding: 8px 12px; border: 1px solid #333; line-height: 1.2; }
         .d-label { background-color: #1e1e1e; color: #fff; width: 40%; font-weight: 500; }
         .d-value { text-align: right; width: 60%; font-weight: 700; color: #fff; }
         .blue-txt { color: #4dabf7 !important; }
         .red-txt { color: #ff6b6b !important; }
-        .dash-line { border-top: 1px dashed #555; margin: 5px 0; }
     </style>
     """, unsafe_allow_html=True)
 
@@ -62,7 +60,6 @@ def smart_purchase_manager_neulbarun_v54():
 
     st.markdown('<div class="main-title">매입매니저 늘바른 <span style="font-size:0.5em; font-weight:400; color:#888;">by 김희주</span></div>', unsafe_allow_html=True)
 
-    # 상단 입력부
     col1, col2, col3 = st.columns([1.5, 1, 1])
     with col1:
         sales_input = st.number_input("판매 예정가 (만원)", value=3500, step=10, format="%d")
@@ -72,16 +69,15 @@ def smart_purchase_manager_neulbarun_v54():
     with col3:
         p_route = st.selectbox("매입루트", ["셀프", "제로", "개인거래"])
 
-    # 중앙 결과 요약 (한 화면용)
     st.markdown("---")
     
-    # 고정 비용 설정
+    # 고정비 설정
     COST_AD, COST_DEPOSIT, COST_POLISH_VAT = 270000, 200000, 132000
     
     left_col, right_col = st.columns([1, 1], gap="large")
 
     with left_col:
-        st.markdown("<div class='section-header'>상품화 비용 입력</div>", unsafe_allow_html=True)
+        st.markdown("<div style='font-size:1rem; font-weight:bold; border-left:4px solid #2ecc71; padding-left:8px;'>상품화 비용 입력</div>", unsafe_allow_html=True)
         raw_check = st.radio("성능비", [44000, 66000], horizontal=True)
         cost_transport = st.selectbox("교통비", [30000, 50000, 80000, 130000, 170000, 200000])
         in_dent = st.number_input("판금/도색", step=10000, key='in_dent', on_change=smart_unit_converter, args=('in_dent',), format="%d")
@@ -106,8 +102,7 @@ def smart_purchase_manager_neulbarun_v54():
     if guide_bid > 0: guide_bid = int(math.ceil(guide_bid / 10000) * 10000)
 
     with right_col:
-        st.markdown("<div class='section-header'>입찰 금액 결정</div>", unsafe_allow_html=True)
-        st.markdown(f"<div style='font-size:1.1rem; font-weight:700; color:#4dabf7; margin-bottom:10px;'>수수료 원가 반영 5% 매입가</div>", unsafe_allow_html=True)
+        st.markdown("<div style='font-size:1rem; font-weight:bold; border-left:4px solid #2ecc71; padding-left:8px;'>입찰 금액 결정</div>", unsafe_allow_html=True)
         st.markdown(f"<div style='font-size:2.2rem; font-weight:900; color:#4dabf7;'>{int(guide_bid):,} 원</div>", unsafe_allow_html=True)
         my_bid = st.number_input("실제 입찰가 입력", value=int(guide_bid), step=10000, format="%d", label_visibility="collapsed")
 
@@ -129,12 +124,13 @@ def smart_purchase_manager_neulbarun_v54():
         st.markdown(f"<div class='result-val' style='color:#ff6b6b;'>{real_margin_rate:.2f} %</div>", unsafe_allow_html=True)
 
     # -----------------------------------------------------------
-    # [완결] 이미지 세 번째 캡처와 100% 동일한 하단 레이아웃
+    # [수정] 테이블 가로 너비를 50%로 고정한 하단 레이아웃
     # -----------------------------------------------------------
     with st.expander("📄 상세 견적 및 복사 (펼치기)", expanded=True):
         d_col1, d_col2 = st.columns([1, 1], gap="large")
         with d_col1:
             st.markdown("<div style='font-size:0.9rem; color:#bbb; margin-bottom:8px;'>▼ 상세 내역 (확인용)</div>", unsafe_allow_html=True)
+            # 테이블 가로 너비 50% 고정
             st.markdown(f"""
                 <table class='detail-table'>
                     <tr><td class='d-label'>판매가</td><td class='d-value'>{int(sales_price):,} 원</td></tr>
@@ -158,4 +154,4 @@ def smart_purchase_manager_neulbarun_v54():
             st.code(copy_text, language="text")
 
 if __name__ == "__main__":
-    smart_purchase_manager_neulbarun_v54()
+    smart_purchase_manager_neulbarun_v55()
