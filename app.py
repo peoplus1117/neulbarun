@@ -39,7 +39,7 @@ def get_reg_cost(bid_price, p_type):
 # -----------------------------------------------------------
 # 3. 메인 앱
 # -----------------------------------------------------------
-def smart_purchase_manager_neulbarun_v23():
+def smart_purchase_manager_neulbarun_v24():
     st.set_page_config(page_title="매입매니저 늘바른 by 김희주", layout="wide")
     
     st.markdown("""
@@ -84,10 +84,10 @@ def smart_purchase_manager_neulbarun_v23():
         st.caption("※ 비용/입찰가 팁: 17 입력 시 17만 원 / 3500 입력 시 3,500만 원")
         
         COST_AD = 270000 
-        COST_DEPOSIT = 200000 # 입금비 20만 원 (비과세)
-        COST_POLISH_VAT = int(120000 * 1.1) # 광택비 12만 원 (공급가)
+        COST_DEPOSIT = 200000 
+        COST_POLISH_VAT = int(120000 * 1.1)
         raw_check = st.radio("성능점검비 (포함)", [44000, 66000], horizontal=True)
-        cost_transport = st.selectbox("교통비 (비과세)", [30000, 50000, 80000, 130000, 170000, 200000]) # 교통비 비과세
+        cost_transport = st.selectbox("교통비 (비과세)", [30000, 50000, 80000, 130000, 170000, 200000])
         
         in_dent = st.number_input("판금/도색 (공급가)", step=10000, format="%d", key='in_dent', on_change=smart_unit_converter, args=('in_dent',))
         in_wheel = st.number_input("휠/타이어 (공급가)", step=10000, format="%d", key='in_wheel', on_change=smart_unit_converter, args=('in_wheel',))
@@ -99,17 +99,19 @@ def smart_purchase_manager_neulbarun_v23():
         total_prep_vat = cost_transport + cost_dent_vat + cost_wheel_vat + cost_etc_vat + raw_check + COST_AD + COST_POLISH_VAT + COST_DEPOSIT
 
     # -----------------------------------------------------------
-    # [수정] 정밀 역산 로직 (1,000원 단위 촘촘한 계산)
+    # [수정] 정밀 역산 로직 (수수료 변동 실시간 완벽 반영)
     # -----------------------------------------------------------
     target_margin_rate = 0.05 
     guide_bid = 0
     
-    # 1,000원 단위 역산을 통해 수수료 차이를 매입가에 확실히 반영
+    # 판매가부터 1,000원 단위로 내려가며 모든 변동 비용 실시간 재계산
     for test_bid in range(sales_price, 0, -1000): 
+        # 루프 안에서 수수료, 등록비, 이자를 매번 다시 구함
         t_fee = get_auction_fee(test_bid, p_route)
         t_reg = get_reg_cost(test_bid, p_type)
-        t_interest = int(test_bid * 0.015) # 이자 1.5%
+        t_interest = int(test_bid * 0.015) 
         
+        # 실제 수익 계산 공식 (부가세 10% 제외 후 비용 차감)
         dealer_revenue = (sales_price - test_bid - t_fee) / 1.1
         current_real_income = int(dealer_revenue - (total_prep_vat - t_fee + t_reg + t_interest))
         
@@ -133,7 +135,6 @@ def smart_purchase_manager_neulbarun_v23():
 
     st.markdown("---")
 
-    # 결과 출력 (이자 노출 금지)
     res_fee = get_auction_fee(my_bid, p_route)
     res_reg = get_reg_cost(my_bid, p_type)
     res_interest = int(my_bid * 0.015) 
@@ -161,8 +162,6 @@ def smart_purchase_manager_neulbarun_v23():
                 <tr><td>입금비(비과세)</td><td align='right'>{COST_DEPOSIT:,} 원</td></tr>
                 <tr><td>교통비(비과세)</td><td align='right'>{cost_transport:,} 원</td></tr>
                 <tr><td>판금/도색(VAT)</td><td align='right'>{cost_dent_vat:,} 원</td></tr>
-                <tr><td>휠/타이어(VAT)</td><td align='right'>{cost_wheel_vat:,} 원</td></tr>
-                <tr><td>기타비용(VAT)</td><td align='right'>{cost_etc_vat:,} 원</td></tr>
                 <tr><td>매입등록비</td><td align='right'>{res_reg:,} 원</td></tr>
                 <tr><td>낙찰수수료</td><td align='right'>{res_fee:,} 원</td></tr>
             </table>
@@ -173,4 +172,4 @@ def smart_purchase_manager_neulbarun_v23():
             st.code(copy_text, language="text")
 
 if __name__ == "__main__":
-    smart_purchase_manager_neulbarun_v23()
+    smart_purchase_manager_neulbarun_v24()
