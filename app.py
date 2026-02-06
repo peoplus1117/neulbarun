@@ -39,19 +39,19 @@ def get_reg_cost(bid_price, p_type):
 # -----------------------------------------------------------
 # 3. 메인 앱
 # -----------------------------------------------------------
-def smart_purchase_manager_final():
-    st.set_page_config(page_title="매입견적서 by 김희주", layout="wide")
+def smart_purchase_manager_neulbarun():
+    st.set_page_config(page_title="매입매니저 늘바른 by 김희주", layout="wide")
     
     st.markdown("""
     <style>
         html, body, [class*="css"] { font-size: 16px; }
         @media (max-width: 600px) { html, body, [class*="css"] { font-size: 14px; } }
-        h1 { font-size: clamp(1.5rem, 4vw, 2.5rem) !important; font-weight: 800 !important; }
+        h1 { font-size: clamp(1.5rem, 4vw, 2.5rem) !important; font-weight: 800 !important; color: #2ecc71 !important; }
         .big-price { font-size: clamp(1.6rem, 3.5vw, 2.2rem); font-weight: 900; color: #4dabf7; margin-bottom: 0px; }
         .real-income { font-size: clamp(1.4rem, 2.5vw, 1.8rem); font-weight: bold; }
         .margin-rate { font-size: clamp(2.0rem, 4vw, 2.5rem); font-weight: 900; color: #ff6b6b; }
         .input-check { font-size: 0.9rem; color: #2e7d32; font-weight: bold; margin-top: -10px; margin-bottom: 20px; }
-        .section-header { font-size: 1.1rem; font-weight: bold; margin-bottom: 10px; border-left: 4px solid #4dabf7; padding-left: 10px; }
+        .section-header { font-size: 1.1rem; font-weight: bold; margin-bottom: 10px; border-left: 4px solid #2ecc71; padding-left: 10px; }
         .detail-table-container { width: 100%; max-width: 450px; margin: 0 auto; }
         .detail-table { width: 100%; border-collapse: collapse; font-size: clamp(0.9rem, 2.5vw, 1.1rem); }
         .detail-table td { padding: 6px 10px; border-bottom: 1px solid #555; }
@@ -62,6 +62,7 @@ def smart_purchase_manager_final():
     </style>
     """, unsafe_allow_html=True)
 
+    # 세션 초기화
     if 'p_type' not in st.session_state: st.session_state['p_type'] = "개인"
     if 'p_route' not in st.session_state: st.session_state['p_route'] = "셀프"
     if 'in_dent' not in st.session_state: st.session_state['in_dent'] = 0
@@ -72,7 +73,7 @@ def smart_purchase_manager_final():
         val = st.session_state[key]
         if 0 < val <= 20000: st.session_state[key] = val * 10000
 
-    st.title("매입견적서 by 김희주")
+    st.title("매입매니저 늘바른 by 김희주")
 
     # Step 1. 상단 정보
     col1, col2, col3 = st.columns([1.5, 1, 1])
@@ -99,14 +100,16 @@ def smart_purchase_manager_final():
         in_wheel = st.number_input("휠/타이어", step=10000, format="%d", key='in_wheel', on_change=smart_unit_converter, args=('in_wheel',))
         in_etc = st.number_input("기타비용", step=10000, format="%d", key='in_etc', on_change=smart_unit_converter, args=('in_etc',))
 
-        # 내부 부가세 포함 계산
+        # 내부 부가세 포함 계산 (성능점검비 포함)
         COST_AD = 270000 
         COST_POLISH = int(120000 * 1.1)
+        # 선택된 성능점검비(in_perf)도 1.1을 곱해 포함 처리
         total_prep_vat = int((in_perf + in_transport + in_dent + in_wheel + in_etc) * 1.1) + COST_AD + COST_POLISH
-        st.caption(f"※ 광고(27만), 광택(13.2만) 포함 / 모든 입력값 부가세 10% 가산됨")
+        st.caption(f"※ 광고(27만), 광택(13.2만) 포함 / 입력값 + 성능비 부가세 10% 가산됨")
 
-    # 가이드 계산 (실소득 5% 타겟)
-    target_rate = 0.082 
+    # 가이드 계산 (타겟 마진 6.4%로 변경)
+    # 금리 1.5% + 부가세 매입세액공제 불일치분 등을 고려한 내부 계산 요율 조정
+    target_rate = 0.096 # 실소득 6.4% 확보를 위한 내부 요율
     guide_bid = 0
     temp_start = int(sales_price * (1 - target_rate)) - total_prep_vat
     
@@ -114,7 +117,8 @@ def smart_purchase_manager_final():
         f = get_auction_fee(b, p_route)
         r = get_reg_cost(b, p_type)
         i = int(b * 0.015)
-        if (b + total_prep_vat + f + r + i) <= (sales_price * 0.935):
+        # 실제 6.4%가 확보되는 선까지 역산
+        if (b + total_prep_vat + f + r + i) <= (sales_price * 0.925):
             guide_bid = b
             break
     
@@ -134,7 +138,6 @@ def smart_purchase_manager_final():
         my_bid = st.number_input("입찰가 입력", step=10000, format="%d", label_visibility="collapsed", key='my_bid_input', on_change=smart_unit_converter, args=('my_bid_input',))
         
         bid_ratio = (my_bid / sales_price) * 100 if sales_price > 0 else 0
-        # 수정된 부분: 따옴표 오류 해결
         st.markdown(f"<div class='input-check' style='text-align:right;'>확인: ({bid_ratio:.1f}%) {my_bid:,} 원</div>", unsafe_allow_html=True)
 
     st.markdown("---")
@@ -144,7 +147,9 @@ def smart_purchase_manager_final():
     res_reg = get_reg_cost(my_bid, p_type)
     res_interest = int(my_bid * 0.015)
     
+    # 딜러 수익 = (판매가 - 매입가 - 낙찰수수료) / 1.1
     dealer_revenue = (sales_price - my_bid - res_fee) / 1.1
+    # 실소득 = 수익 - (상품화비용전체(부가세포함) - 낙찰수수료 + 등록비 + 이자)
     real_income = int(dealer_revenue - (total_prep_vat - res_fee + res_reg + res_interest))
     real_margin_rate = (real_income / my_bid * 100) if my_bid > 0 else 0
     total_cost = my_bid + total_prep_vat + res_reg + res_interest
@@ -195,4 +200,4 @@ def smart_purchase_manager_final():
             st.code(copy_text, language="text")
 
 if __name__ == "__main__":
-    smart_purchase_manager_final()
+    smart_purchase_manager_neulbarun()
