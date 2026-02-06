@@ -39,7 +39,7 @@ def get_reg_cost(bid_price, p_type):
 # -----------------------------------------------------------
 # 3. 메인 앱
 # -----------------------------------------------------------
-def smart_purchase_manager_neulbarun_v15():
+def smart_purchase_manager_neulbarun_v16():
     st.set_page_config(page_title="매입매니저 늘바른 by 김희주", layout="wide")
     
     st.markdown("""
@@ -104,10 +104,10 @@ def smart_purchase_manager_neulbarun_v15():
         st.caption(f"※ 광고(27만), 광택(13.2만) 포함 / 모든 입력값 부가세 10% 가산됨")
 
     # -----------------------------------------------------------
-    # [가이드 로직: 타겟 마진 4% 설정]
+    # [가이드 로직: 타겟 마진 3% 설정]
     # -----------------------------------------------------------
-    # 실소득 4%를 확보하기 위해 판매가의 약 95% 선을 예산으로 잡음 (0.94 -> 0.95로 상향)
-    budget_after_margin = int(sales_price * 0.95) 
+    # 실소득 3%를 확보하기 위해 판매가의 약 96% 선을 예산으로 잡음
+    budget_after_margin = int(sales_price * 0.96) 
     guide_bid = 0
     
     start_point = budget_after_margin - total_prep_vat
@@ -196,4 +196,4 @@ def smart_purchase_manager_neulbarun_v15():
             st.code(copy_text, language="text")
 
 if __name__ == "__main__":
-    smart_purchase_manager_neulbarun_v15()
+    smart_purchase_manager_neulbarun_v16()
