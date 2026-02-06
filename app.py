@@ -39,7 +39,7 @@ def get_reg_cost(bid_price, p_type):
 # -----------------------------------------------------------
 # 3. 메인 앱
 # -----------------------------------------------------------
-def smart_purchase_manager_neulbarun_v20():
+def smart_purchase_manager_neulbarun_v21():
     st.set_page_config(page_title="매입매니저 늘바른 by 김희주", layout="wide")
     
     st.markdown("""
@@ -68,7 +68,7 @@ def smart_purchase_manager_neulbarun_v20():
 
     col1, col2, col3 = st.columns([1.5, 1, 1])
     with col1:
-        sales_input = st.number_input("판매 예정가 (단위: 만원)", value=3500, step=10, format="%d")
+        sales_input = st.number_input("판매 예정가 (만원)", value=3500, step=10, format="%d")
         sales_price = sales_input * 10000
     with col2:
         p_type = st.radio("매입유형", ["개인", "사업자"])
@@ -80,24 +80,26 @@ def smart_purchase_manager_neulbarun_v20():
     left_col, right_col = st.columns([1, 1], gap="large")
 
     with left_col:
-        st.markdown("<div class='section-header'>상품화 비용 입력 (세전 입력)</div>", unsafe_allow_html=True)
-        st.caption("※ 비용/입찰가 입력 팁: 17 입력시 → 170,000원 / 3500 입력시 → 3,500만원")
+        st.markdown("<div class='section-header'>상품화 비용 입력 (세전)</div>", unsafe_allow_html=True)
+        st.caption("※ 비용/입찰가 팁: 17 입력 시 17만 원 / 3500 입력 시 3,500만 원")
         
         COST_AD = 270000 
-        COST_DEPOSIT = 200000 # 입금 20만원 비과세 고정
-        COST_POLISH_VAT = int(120000 * 1.1)
-        raw_check = st.radio("성능점검비 (VAT포함 기준)", [44000, 66000], horizontal=True)
-        cost_transport = st.selectbox("교통비 (비과세)", [30000, 50000, 80000, 130000, 170000, 200000])
+        COST_DEPOSIT = 200000 # 입금 20만 원 (비과세)
+        COST_POLISH_VAT = int(120000 * 1.1) # 광택 12만 원 (별도)
+        raw_check = st.radio("성능점검비 (포함)", [44000, 66000], horizontal=True)
+        cost_transport = st.selectbox("교통비 (비과세)", [30000, 50000, 80000, 130000, 170000, 200000]) # 교통비 비과세
         
         in_dent = st.number_input("판금/도색 (공급가)", step=10000, format="%d", key='in_dent', on_change=smart_unit_converter, args=('in_dent',))
         in_wheel = st.number_input("휠/타이어 (공급가)", step=10000, format="%d", key='in_wheel', on_change=smart_unit_converter, args=('in_wheel',))
         in_etc = st.number_input("기타비용 (공급가)", step=10000, format="%d", key='in_etc', on_change=smart_unit_converter, args=('in_etc',))
 
-        total_prep_vat = cost_transport + int(in_dent*1.1) + int(in_wheel*1.1) + int(in_etc*1.1) + raw_check + COST_AD + COST_POLISH_VAT + COST_DEPOSIT
-        st.caption(f"※ 광고(27만), 광택(13.2만), 입금(20만, 비과세), 교통비(비과세) 포함")
+        cost_dent_vat = int(in_dent * 1.1)
+        cost_wheel_vat = int(in_wheel * 1.1)
+        cost_etc_vat = int(in_etc * 1.1)
+        total_prep_vat = cost_transport + cost_dent_vat + cost_wheel_vat + cost_etc_vat + raw_check + COST_AD + COST_POLISH_VAT + COST_DEPOSIT
 
     # -----------------------------------------------------------
-    # 목표 수익률 5% 역산 로직 (이자 1.5% 반영)
+    # 목표 수익률 5% 역산 로직 (이자 1.5% 계산용)
     # -----------------------------------------------------------
     target_margin_rate = 0.05 
     guide_bid = 0
@@ -105,7 +107,7 @@ def smart_purchase_manager_neulbarun_v20():
     for test_bid in range(sales_price, 0, -10000):
         t_fee = get_auction_fee(test_bid, p_route)
         t_reg = get_reg_cost(test_bid, p_type)
-        t_interest = int(test_bid * 0.015) 
+        t_interest = int(test_bid * 0.015) # 이자 1.5%
         
         dealer_revenue = (sales_price - test_bid - t_fee) / 1.1
         current_real_income = int(dealer_revenue - (total_prep_vat - t_fee + t_reg + t_interest))
@@ -123,17 +125,17 @@ def smart_purchase_manager_neulbarun_v20():
 
     with right_col:
         st.markdown("<div class='section-header'>입찰 금액 결정</div>")
-        st.markdown(f"**목표 수익률 5% 맞춤 매입가 (입금 20만 반영)**")
+        st.markdown(f"**수익률 5% 맞춤 매입가 (입금 20만 반영)**")
         st.markdown(f"<div class='big-price'>{guide_bid:,} 원</div>", unsafe_allow_html=True)
         st.write("")
         my_bid = st.number_input("실제 입찰가 입력", step=10000, format="%d", label_visibility="collapsed", key='my_bid_input', on_change=smart_unit_converter, args=('my_bid_input',))
 
     st.markdown("---")
 
-    # 결과 출력
+    # 결과 출력 (이자 노출 금지)
     res_fee = get_auction_fee(my_bid, p_route)
     res_reg = get_reg_cost(my_bid, p_type)
-    res_interest = int(my_bid * 0.015)
+    res_interest = int(my_bid * 0.015) 
     
     dealer_revenue = (sales_price - my_bid - res_fee) / 1.1
     real_income = int(dealer_revenue - (total_prep_vat - res_fee + res_reg + res_interest))
@@ -157,13 +159,16 @@ def smart_purchase_manager_neulbarun_v20():
                 <tr><td>매입가</td><td align='right' style='color:#4dabf7;'>{my_bid:,} 원</td></tr>
                 <tr><td>입금비(비과세)</td><td align='right'>{COST_DEPOSIT:,} 원</td></tr>
                 <tr><td>교통비(비과세)</td><td align='right'>{cost_transport:,} 원</td></tr>
-                <tr><td>등록/이자/수수료 합계</td><td align='right'>{res_reg + res_interest + res_fee:,} 원</td></tr>
+                <tr><td>판금/도색(VAT)</td><td align='right'>{cost_dent_vat:,} 원</td></tr>
+                <tr><td>휠/타이어(VAT)</td><td align='right'>{cost_wheel_vat:,} 원</td></tr>
+                <tr><td>매입등록비</td><td align='right'>{res_reg:,} 원</td></tr>
+                <tr><td>낙찰수수료</td><td align='right'>{res_fee:,} 원</td></tr>
             </table>
             """, unsafe_allow_html=True)
         with d_col2:
-            st.caption("▼ 복사 전용 텍스트")
-            copy_text = f"판매가: {sales_price:,}원\n매입가: {my_bid:,}원\n수익률: {real_margin_rate:.2f}%\n실소득: {real_income:,}원\n-----------------\n입금비(비과세): {COST_DEPOSIT:,}원\n금융이자(1.5%): {res_interest:,}원\n매입등록: {res_reg:,}원\n낙찰수수: {res_fee:,}원"
+            st.caption("▼ 복사 전용 텍스트 (금융이자 제외)")
+            copy_text = f"판매가: {sales_price:,}원\n매입가: {my_bid:,}원\n수익률: {real_margin_rate:.2f}%\n실소득: {real_income:,}원\n-----------------\n입금비: {COST_DEPOSIT:,}원\n교통비: {cost_transport:,}원\n판금도색: {cost_dent_vat:,}원\n휠타이어: {cost_wheel_vat:,}원\n기타비용: {cost_etc_vat:,}원\n매입등록: {res_reg:,}원\n낙찰수수: {res_fee:,}원"
             st.code(copy_text, language="text")
 
 if __name__ == "__main__":
-    smart_purchase_manager_neulbarun_v20()
+    smart_purchase_manager_neulbarun_v21()
