@@ -39,7 +39,7 @@ def get_reg_cost(bid_price, p_type):
 # -----------------------------------------------------------
 # 3. 메인 앱
 # -----------------------------------------------------------
-def smart_purchase_manager_neulbarun_v12():
+def smart_purchase_manager_neulbarun_v13():
     st.set_page_config(page_title="매입매니저 늘바른 by 김희주", layout="wide")
     
     st.markdown("""
@@ -74,7 +74,7 @@ def smart_purchase_manager_neulbarun_v12():
         val = st.session_state[key]
         if 0 < val <= 20000: st.session_state[key] = val * 10000
 
-    # 커스텀 타이틀 (by 김희주 작게 적용)
+    # 타이틀 (by 김희주 작게)
     st.markdown('<div class="main-title">매입매니저 늘바른 <span class="sub-author">by 김희주</span></div>', unsafe_allow_html=True)
 
     # Step 1. 상단 정보
@@ -95,7 +95,6 @@ def smart_purchase_manager_neulbarun_v12():
 
     with left_col:
         st.markdown("<div class='section-header'>상품화 비용 입력 (공급가)</div>", unsafe_allow_html=True)
-        # 2번 요청 반영: 부가세 포함 금액인 44,000 / 66,000으로 표시
         in_perf = st.radio("성능점검비 (VAT포함)", [44000, 66000], horizontal=True)
         in_transport = st.selectbox("교통비", [30000, 50000, 80000, 130000, 170000, 200000])
         
@@ -103,28 +102,33 @@ def smart_purchase_manager_neulbarun_v12():
         in_wheel = st.number_input("휠/타이어", step=10000, format="%d", key='in_wheel', on_change=smart_unit_converter, args=('in_wheel',))
         in_etc = st.number_input("기타비용", step=10000, format="%d", key='in_etc', on_change=smart_unit_converter, args=('in_etc',))
 
-        # 내부 계산: 광고비 27만, 광택 13.2만 고정 + 입력 항목 부가세 10%
+        # 내부 부가세 포함 계산 (V36 방식 기준)
         COST_AD = 270000 
-        COST_POLISH = int(120000 * 1.1)
-        # 성능점검비는 이미 VAT포함된 값을 입력받으므로 1.1을 곱하지 않음
+        COST_POLISH = 132000 # 12만 * 1.1
         total_prep_vat = int((in_transport + in_dent + in_wheel + in_etc) * 1.1) + in_perf + COST_AD + COST_POLISH
-        st.caption(f"※ 광고(27만), 광택(13.2만) 포함 / 입력값 부가세 10% 가산됨")
+        st.caption(f"※ 광고(27만), 광택(13.2만) 포함 / 모든 입력값 부가세 10% 가산됨")
 
-    # 가이드 계산 (타겟 마진 6%로 변경)
-    target_rate = 0.092 # 실소득 6% 확보를 위한 내부 요율
+    # -----------------------------------------------------------
+    # [V36과 동일한 가이드 로직]
+    # -----------------------------------------------------------
+    # V36 기준: 판매 예정가의 5.5% 마진을 확보하기 위한 역산
+    budget_after_margin = int(sales_price * 0.945) 
     guide_bid = 0
-    temp_start = int(sales_price * (1 - target_rate)) - total_prep_vat
     
-    for b in range(temp_start, temp_start - 5000000, -10000):
-        f = get_auction_fee(b, p_route)
-        r = get_reg_cost(b, p_type)
-        i = int(b * 0.015)
-        # 실제 6.0%가 확보되는 선까지 역산
-        if (b + total_prep_vat + f + r + i) <= (sales_price * 0.929):
-            guide_bid = b
+    # 높은 금액부터 1만원씩 깎으면서 수수료와 등록비를 포함한 총액이 예산 안에 들어오는지 확인
+    # 단, 금리는 늘바른 기준(1.5%)을 적용할지 V36 기준(1.0%)을 적용할지 중 늘바른 요청사항인 1.5%를 유지했습니다.
+    start_point = budget_after_margin - total_prep_vat
+    for bid in range(start_point, start_point - 5000000, -10000):
+        fee = get_auction_fee(bid, p_route)
+        reg = get_reg_cost(bid, p_type)
+        # 만약 가이드도 V36과 100% 똑같은 금액이 찍히길 원하시면 아래 0.015를 0.01로 바꾸면 됩니다.
+        interest = int(bid * 0.015) 
+        if (bid + total_prep_vat + fee + reg + interest) <= budget_after_margin:
+            guide_bid = bid
             break
-    
-    if guide_bid > 0: guide_bid = math.ceil(guide_bid / 10000) * 10000
+            
+    if guide_bid > 0:
+        guide_bid = math.ceil(guide_bid / 10000) * 10000
 
     if 'prev_guide_bid' not in st.session_state: st.session_state['prev_guide_bid'] = -1
     if guide_bid != st.session_state['prev_guide_bid']:
@@ -133,7 +137,7 @@ def smart_purchase_manager_neulbarun_v12():
 
     with right_col:
         st.markdown("<div class='section-header'>입찰 금액 결정</div>", unsafe_allow_html=True)
-        st.markdown("**적정 매입가**")
+        st.markdown("**적정 매입가 (Guide)**")
         st.markdown(f"<div class='big-price'>{guide_bid:,} 원</div>", unsafe_allow_html=True)
         st.write("")
         st.markdown("**▼ 실제 입찰금액 입력**")
@@ -144,7 +148,7 @@ def smart_purchase_manager_neulbarun_v12():
 
     st.markdown("---")
 
-    # 최종 결과 계산
+    # 결과 계산
     res_fee = get_auction_fee(my_bid, p_route)
     res_reg = get_reg_cost(my_bid, p_type)
     res_interest = int(my_bid * 0.015)
@@ -200,4 +204,4 @@ def smart_purchase_manager_neulbarun_v12():
             st.code(copy_text, language="text")
 
 if __name__ == "__main__":
-    smart_purchase_manager_neulbarun_v12()
+    smart_purchase_manager_neulbarun_v13()
