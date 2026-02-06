@@ -1,7 +1,7 @@
 import streamlit as st
 import math
 
-# 1. [로직] 낙찰수수료
+# 1. [로직] 낙찰수수료 (희주 님 원본 기준)
 def get_auction_fee(price, route):
     if route == "셀프":
         if price <= 1000000: return 75000
@@ -33,36 +33,36 @@ def get_reg_cost(bid_price, p_type):
         else: return 0
 
 # 3. 메인 앱
-def smart_purchase_manager_neulbarun_v49():
+def smart_purchase_manager_neulbarun_v50():
     st.set_page_config(page_title="매입매니저 늘바른 by 김희주", layout="wide")
     
-    # [디자인 복구] 테이블 칸 크기 및 글자 크기 정밀 조정
+    # [디자인] 내견적서 v36 스타일 CSS 복구
     st.markdown("""
     <style>
-        html, body, [class*="css"] { font-size: 16px; }
-        .main-title { font-size: 2.5rem; font-weight: 800; color: #2ecc71; display: inline-block; }
-        .sub-author { font-size: 0.5em; font-weight: 400; color: #888; margin-left: 10px; }
-        .big-price { font-size: 2.6rem; font-weight: 900; color: #4dabf7; margin-bottom: 0px; }
-        .real-income { font-size: 2.4rem; font-weight: bold; color: #ffffff; }
+        html, body, [class*="css"] { font-size: 16px; font-family: 'Pretendard', sans-serif; }
+        .main-title { font-size: 2.5rem; font-weight: 800; color: #2ecc71; }
+        .big-price { font-size: 2.8rem; font-weight: 900; color: #4dabf7; margin-bottom: 0px; }
+        .real-income { font-size: 2.4rem; font-weight: bold; }
         .margin-rate { font-size: 3.2rem; font-weight: 900; color: #ff6b6b; }
-        .section-header { font-size: 1.3rem; font-weight: bold; border-left: 6px solid #2ecc71; padding-left: 12px; margin-top: 25px; margin-bottom: 15px; }
+        .section-header { font-size: 1.3rem; font-weight: bold; border-left: 6px solid #2ecc71; padding-left: 12px; margin-top: 25px; }
         
-        /* 상세 내역 테이블 디자인 - 희주 님 견적서와 똑같이 */
-        .detail-table { width: 100%; border-collapse: collapse; font-size: 1.25rem; color: #ffffff; }
-        .detail-table td { padding: 15px 10px; border-bottom: 1px solid #444; line-height: 1.5; }
-        .table-label { font-weight: 600; color: #bbbbbb; width: 40%; }
-        .table-value { text-align: right; font-weight: 700; width: 60%; }
-        .highlight-blue { color: #4dabf7; font-size: 1.4rem; }
-        .highlight-red { color: #ff6b6b; font-size: 1.4rem; }
-        .separator { border-bottom: 3px solid #666 !important; }
+        /* 희주 님 요청 상세내역 칸 크기 및 폰트 복구 */
+        .detail-table { width: 100%; border-collapse: collapse; font-size: 1.3rem; }
+        .detail-table td { padding: 18px 12px; border-bottom: 1px solid #444; line-height: 1.4; }
+        .label-cell { width: 45%; color: #bbb; font-weight: 500; }
+        .value-cell { width: 55%; text-align: right; font-weight: 800; color: #fff; }
+        .blue-val { color: #4dabf7 !important; }
+        .red-val { color: #ff6b6b !important; }
+        .thick-border { border-bottom: 3px solid #666 !important; }
     </style>
     """, unsafe_allow_html=True)
 
+    # 1=10,000 자동 변환 로직
     def smart_unit_converter(key):
         val = st.session_state[key]
         if 0 < val <= 5000: st.session_state[key] = int(val * 10000)
 
-    st.markdown('<div class="main-title">매입매니저 늘바른 <span class="sub-author">by 김희주</span></div>', unsafe_allow_html=True)
+    st.markdown('<div class="main-title">매입매니저 늘바른 <span style="font-size:0.5em; font-weight:400; color:#888; margin-left:10px;">by 김희주</span></div>', unsafe_allow_html=True)
 
     col1, col2, col3 = st.columns([1.5, 1, 1])
     with col1:
@@ -80,9 +80,11 @@ def smart_purchase_manager_neulbarun_v49():
     with left_col:
         st.markdown("<div class='section-header'>상품화 비용 입력</div>", unsafe_allow_html=True)
         st.info("※ 광고(27만), 광택(13.2만), 입금(20만) 자동 포함")
-        COST_AD, COST_DEPOSIT, COST_POLISH_VAT = 270000, 200000, 132000 
+        COST_AD, COST_DEPOSIT, COST_POLISH_VAT = 270000, 200000, 132000 #
         raw_check = st.radio("성능비 (VAT포함)", [44000, 66000], horizontal=True)
         cost_transport = st.selectbox("교통비 (비과세)", [30000, 50000, 80000, 130000, 170000, 200000])
+        
+        # 버튼 10,000원 단위 이동 및 22 입력 시 자동 변환
         in_dent = st.number_input("판금/도색", step=10000, key='in_dent', on_change=smart_unit_converter, args=('in_dent',), format="%d")
         in_wheel = st.number_input("휠/타이어", step=10000, key='in_wheel', on_change=smart_unit_converter, args=('in_wheel',), format="%d")
         in_etc = st.number_input("기타비용", step=10000, key='in_etc', on_change=smart_unit_converter, args=('in_etc',), format="%d")
@@ -90,13 +92,13 @@ def smart_purchase_manager_neulbarun_v49():
         cost_dent_vat, cost_wheel_vat, cost_etc_vat = int(in_dent * 1.1), int(in_wheel * 1.1), int(in_etc * 1.1)
         fixed_prep_costs = int(cost_transport + cost_dent_vat + cost_wheel_vat + cost_etc_vat + raw_check + COST_AD + COST_POLISH_VAT + COST_DEPOSIT)
 
-    # 역산 로직
+    # 희주 님 공식: 판매가 - (매입가+수수료+등록비+이자+기타비용) = 순이익 5%
     target_margin_rate = 0.05 
     guide_bid = 0
     for test_bid in range(sales_price, 0, -1000): 
         t_fee = int(get_auction_fee(test_bid, p_route))
         t_reg = int(get_reg_cost(test_bid, p_type))
-        t_interest = int(test_bid * 0.015) 
+        t_interest = int(test_bid * 0.015) # 이자 1.5% 반영
         total_cost = test_bid + t_fee + t_reg + t_interest + fixed_prep_costs
         net_profit = sales_price - total_cost
         if test_bid > 0 and (net_profit / test_bid) >= target_margin_rate:
@@ -113,7 +115,7 @@ def smart_purchase_manager_neulbarun_v49():
 
     st.markdown("---")
 
-    # 결과 계산
+    # 결과 연산
     res_fee = int(get_auction_fee(my_bid, p_route))
     res_reg = int(get_reg_cost(my_bid, p_type))
     res_interest = int(my_bid * 0.015) 
@@ -129,34 +131,32 @@ def smart_purchase_manager_neulbarun_v49():
         st.markdown("<div style='text-align:center;'>실질 수익률</div>", unsafe_allow_html=True)
         st.markdown(f"<div style='text-align:center;' class='margin-rate'>{real_margin_rate:.2f} %</div>", unsafe_allow_html=True)
 
-    # -----------------------------------------------------------
-    # [디자인 완성] 상세 견적 레이아웃 복구
-    # -----------------------------------------------------------
+    # [디자인 완성] 내견적서 v36 레이아웃 100% 복구
     with st.expander("📄 상세 견적 및 복사 (펼치기)", expanded=True):
         d_col1, d_col2 = st.columns([1, 1], gap="large")
         with d_col1:
-            st.markdown("<div style='margin-bottom:10px;'>▼ 상세 내역 (확인용)</div>", unsafe_allow_html=True)
+            st.markdown("▼ 상세 내역 (확인용)")
             st.markdown(f"""
             <table class='detail-table'>
-                <tr><td class='table-label'>판매가</td><td class='table-value'>{int(sales_price):,} 원</td></tr>
-                <tr><td class='table-label'>매입가</td><td class='table-value highlight-blue'>{int(my_bid):,} 원</td></tr>
-                <tr><td class='table-label'>총 소요원가</td><td class='table-value'>{int(total_cost_final):,} 원</td></tr>
-                <tr><td colspan='2' class='separator'></td></tr>
-                <tr><td class='table-label'>예상이익률</td><td class='table-value highlight-red'>{real_margin_rate:.2f} %</td></tr>
-                <tr><td class='table-label'>실소득액</td><td class='table-value'>{int(real_income):,} 원</td></tr>
-                <tr><td colspan='2' class='separator'></td></tr>
-                <tr><td class='table-label'>교통비</td><td class='table-value'>{int(cost_transport):,} 원</td></tr>
-                <tr><td class='table-label'>판금/도색</td><td class='table-value'>{int(cost_dent_vat):,} 원</td></tr>
-                <tr><td class='table-label'>휠/타이어</td><td class='table-value'>{int(cost_wheel_vat):,} 원</td></tr>
-                <tr><td class='table-label'>기타비용</td><td class='table-value'>{int(cost_etc_vat):,} 원</td></tr>
-                <tr><td class='table-label'>매입등록비</td><td class='table-value'>{int(res_reg):,} 원</td></tr>
-                <tr><td class='table-label'>낙찰수수료</td><td class='table-value'>{int(res_fee):,} 원</td></tr>
+                <tr><td class='label-cell'>판매가</td><td class='value-cell'>{int(sales_price):,} 원</td></tr>
+                <tr><td class='label-cell'>매입가</td><td class='value-cell blue-val'>{int(my_bid):,} 원</td></tr>
+                <tr><td class='label-cell'>총 소요원가</td><td class='value-cell'>{int(total_cost_final):,} 원</td></tr>
+                <tr><td colspan='2' class='thick-border'></td></tr>
+                <tr><td class='label-cell'>예상이익률</td><td class='value-cell red-val'>{real_margin_rate:.2f} %</td></tr>
+                <tr><td class='label-cell'>실소득액</td><td class='value-cell'>{int(real_income):,} 원</td></tr>
+                <tr><td colspan='2' class='thick-border'></td></tr>
+                <tr><td class='label-cell'>교통비</td><td class='value-cell'>{int(cost_transport):,} 원</td></tr>
+                <tr><td class='label-cell'>판금/도색</td><td class='value-cell'>{int(cost_dent_vat):,} 원</td></tr>
+                <tr><td class='label-cell'>휠/타이어</td><td class='value-cell'>{int(cost_wheel_vat):,} 원</td></tr>
+                <tr><td class='label-cell'>기타비용</td><td class='value-cell'>{int(cost_etc_vat):,} 원</td></tr>
+                <tr><td class='label-cell'>매입등록비</td><td class='value-cell'>{int(res_reg):,} 원</td></tr>
+                <tr><td class='label-cell'>낙찰수수료</td><td class='value-cell'>{int(res_fee):,} 원</td></tr>
             </table>
             """, unsafe_allow_html=True)
         with d_col2:
-            st.markdown("<div style='margin-bottom:10px;'>▼ 복사 전용 텍스트 (우측상단 클릭)</div>", unsafe_allow_html=True)
+            st.markdown("▼ 복사 전용 텍스트 (우측상단 클릭)")
             copy_text = f"판매가  : {int(sales_price):,} 원\n매입가  : {int(my_bid):,} 원\n예상이익률 : {real_margin_rate:.2f} %\n실소득액  : {int(real_income):,} 원\n----------------------------\n교통비   : {int(cost_transport):,} 원\n판금/도색 : {int(cost_dent_vat):,} 원\n휠/타이어 : {int(cost_wheel_vat):,} 원\n기타비용  : {int(cost_etc_vat):,} 원\n매입등록비 : {int(res_reg):,} 원\n낙찰수수료 : {int(res_fee):,} 원"
             st.code(copy_text, language="text")
 
 if __name__ == "__main__":
-    smart_purchase_manager_neulbarun_v49()
+    smart_purchase_manager_neulbarun_v50()
